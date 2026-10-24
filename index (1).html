@@ -1,0 +1,2098 @@
+<!doctype html>
+<!-- index.html
+  TelusurDana: prototipe konsep asurans berkelanjutan untuk platform pindar.
+  PROTOTIPE KONSEP. Data simulasi, bukan penilaian terhadap perusahaan nyata.
+  Tim Little Boy, IAC 2026 Essay Competition. Versi 1.0, 22 Oktober 2026.
+
+  Cara membuka : simpan sebagai index.html, lalu klik dua kali (Chrome, Edge, atau Firefox).
+                 Tanpa instalasi dan tanpa server. Internet hanya dipakai untuk memuat huruf
+                 Google Fonts; tanpa internet huruf bawaan dipakai dan semua fitur tetap jalan.
+  Isi berkas   : <style>  TAMPILAN (CSS) dengan token warna terang dan gelap, plus gaya cetak
+                 <body>   spanduk, navigasi, dan sepuluh bagian (data-view="...")
+                 <script> DATA -> RUMUS -> TAMPILAN -> DEMO -> UJI, masing-masing diberi komentar
+  Mengubah data       : cari "const DATA". Satuan Rp juta, satu baris = satu bulan.
+  Mengubah ambang/bobot: cari "CFG_DEFAULT".
+  Uji di konsol (F12) : TelusurDana.jalankanUji()
+-->
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TelusurDana</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap">
+<style>
+/* dasar halaman */
+[hidden]{display:none!important}
+body{margin:0}
+img{max-width:100%}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+/* =====================================================================
+   TAMPILAN (CSS)
+   Semua warna disimpan sebagai token di :root, lalu ditimpa untuk mode
+   gelap. Komponen hanya memakai token, jadi kedua tema selalu terbaca.
+   ===================================================================== */
+:root{
+  --bg:#f4f2ec; --surface:#fffdf8; --surface-2:#ece8df; --line:#dcd6c9; --line-2:#c4bcab;
+  --fg:#1b1e25; --fg-2:#454a56; --fg-3:#62666f;
+  --accent:#2c3d96; --accent-fg:#ffffff; --accent-soft:#e1e5f6;
+  --ok:#1b6a43; --ok-bg:#dff0e6; --ok-line:#9ccfb1;
+  --warn:#7f5200; --warn-bg:#faecc9; --warn-line:#e2c06a;
+  --bad:#a3231b; --bad-bg:#f8dedb; --bad-line:#e3a19b;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a;          /* warna seri grafik regulator (urutan tetap) */
+  --band:#1b1e25; --band-fg:#f4f2ec; --tag-bg:#f2c94c; --tag-fg:#1b1e25;
+  --grid:#e4dfd4; --tip-bg:#1b1e25; --tip-fg:#f4f2ec;
+  --shadow:0 1px 0 rgb(27 30 37 / .04), 0 10px 28px -16px rgb(27 30 37 / .28);
+  --f-display:"Newsreader", Georgia, "Times New Roman", serif;
+  --f-ui:"Instrument Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#111318; --surface:#181b22; --surface-2:#20242d; --line:#2b303b; --line-2:#3d4351;
+    --fg:#ece9e2; --fg-2:#b8bbc5; --fg-3:#979ba6;
+    --accent:#9dadff; --accent-fg:#0d1230; --accent-soft:#232a4a;
+    --ok:#74d6a0; --ok-bg:#13291c; --ok-line:#2d5d41;
+    --warn:#f2c45a; --warn-bg:#2f2610; --warn-line:#61501d;
+    --bad:#ff8f86; --bad-bg:#341917; --bad-line:#6d302b;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70;
+    --band:#ece9e2; --band-fg:#111318; --tag-bg:#f2c45a; --tag-fg:#111318;
+    --grid:#262a33; --tip-bg:#ece9e2; --tip-fg:#111318;
+    --shadow:0 1px 0 rgb(0 0 0 / .2), 0 10px 28px -16px rgb(0 0 0 / .7);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#111318; --surface:#181b22; --surface-2:#20242d; --line:#2b303b; --line-2:#3d4351;
+  --fg:#ece9e2; --fg-2:#b8bbc5; --fg-3:#979ba6;
+  --accent:#9dadff; --accent-fg:#0d1230; --accent-soft:#232a4a;
+  --ok:#74d6a0; --ok-bg:#13291c; --ok-line:#2d5d41;
+  --warn:#f2c45a; --warn-bg:#2f2610; --warn-line:#61501d;
+  --bad:#ff8f86; --bad-bg:#341917; --bad-line:#6d302b;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70;
+  --band:#ece9e2; --band-fg:#111318; --tag-bg:#f2c45a; --tag-fg:#111318;
+  --grid:#262a33; --tip-bg:#ece9e2; --tip-fg:#111318;
+  --shadow:0 1px 0 rgb(0 0 0 / .2), 0 10px 28px -16px rgb(0 0 0 / .7);
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-ui);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--band)}
+.wrap{max-width:1140px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+a{color:var(--accent);text-underline-offset:3px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+h1,h2,h3{text-wrap:balance;margin:0}
+p{margin:0}
+.mono,.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.skip{position:absolute;left:-9999px;top:0;z-index:40;background:var(--accent);color:var(--accent-fg);padding:8px 12px;border-radius:0 0 8px 0}
+.skip:focus{left:0}
+.sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.hp-only{display:none}
+.print-only{display:none}
+
+/* ---------- bilah atas: spanduk tetap + navigasi ---------- */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:25}
+.band{background:var(--band);color:var(--band-fg)}
+.band .wrap{display:flex;align-items:center;gap:10px;padding-block:7px;font-size:13px;line-height:1.35}
+.band .tag{flex:none;background:var(--tag-bg);color:var(--tag-fg);font-weight:700;letter-spacing:.06em;font-size:11px;padding:3px 7px;border-radius:4px;text-transform:uppercase}
+.band .txt{min-width:0}
+.bar{background:var(--surface);border-bottom:1px solid var(--line)}
+.bar .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:0 12px}
+.brand{order:1;display:flex;align-items:center;gap:9px;flex:none;min-height:52px;text-decoration:none;color:var(--fg)}
+.brand svg{width:26px;height:26px;color:var(--accent)}
+.brand b{font-family:var(--f-display);font-size:21px;font-weight:600;letter-spacing:-.01em}
+.tools{order:2;margin-left:auto;display:flex;gap:6px;flex:none}
+.tabs{order:3;flex-basis:100%;display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;min-width:0;margin-inline:-9px;padding-bottom:6px}
+.tabs::-webkit-scrollbar{display:none}
+.tab{appearance:none;border:0;background:none;color:var(--fg-2);font:500 14px/1 var(--f-ui);padding:9px 9px;border-radius:7px;cursor:pointer;white-space:nowrap}
+.tab:hover{background:var(--surface-2);color:var(--fg)}
+.tab[aria-current="page"]{background:var(--accent-soft);color:var(--accent)}
+.tbtn{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--fg-2);font:500 13px/1 var(--f-ui);padding:8px 10px;border-radius:7px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.tbtn:hover{border-color:var(--line-2);color:var(--fg)}
+.tbtn svg{width:15px;height:15px}
+
+/* ---------- umum ---------- */
+main{padding-block:28px 56px}
+.view{display:grid;gap:22px}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--fg-3)}
+.kk{font-family:var(--f-mono);font-size:12px;color:var(--accent);background:var(--accent-soft);padding:2px 7px;border-radius:4px;letter-spacing:.02em}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);min-width:0}
+.pad{padding:18px}
+.sec-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 12px}
+.sec-h h2{font-family:var(--f-display);font-weight:600;font-size:clamp(23px,2.6vw,29px);letter-spacing:-.01em;line-height:1.2}
+.sec-h h3,.h3{font-size:17px;font-weight:600;line-height:1.35}
+.intro{display:grid;gap:10px}
+.lead{color:var(--fg-2);max-width:72ch}
+.note{font-size:13.5px;color:var(--fg-3)}
+.asumsi{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--warn);background:var(--warn-bg);border:1px dashed var(--warn-line);padding:2px 8px;border-radius:999px;white-space:nowrap}
+.ilus{justify-self:start;display:inline-flex;align-items:center;font-size:11.5px;font-weight:600;color:var(--fg-2);background:var(--surface-2);border:1px solid var(--line-2);padding:1px 7px;border-radius:999px;white-space:nowrap;margin-left:6px}
+.vonis{font-weight:600;font-size:14.5px;color:var(--fg);border-left:3px solid var(--accent);padding:2px 0 2px 12px}
+.btn{appearance:none;font:600 14px/1 var(--f-ui);padding:11px 15px;border-radius:8px;cursor:pointer;border:1px solid var(--line-2);background:var(--surface);color:var(--fg);display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+.btn:hover{border-color:var(--fg-3)}
+.btn.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.small{padding:8px 11px;font-size:13px}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.toast{position:fixed;z-index:60;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));width:max-content;max-width:min(560px,calc(100vw - 32px));background:var(--tip-bg);color:var(--tip-fg);font-size:14px;line-height:1.45;padding:10px 14px;border-radius:10px;box-shadow:var(--shadow)}
+.toast:empty{display:none}
+.toolbar{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:center}
+.field{display:inline-flex;align-items:center;gap:8px;font-size:14px;color:var(--fg-2)}
+select,textarea,input[type="number"]{font:inherit;font-size:14.5px;color:var(--fg);background:var(--surface);border:1px solid var(--line-2);border-radius:8px;padding:8px 10px}
+textarea{width:100%;min-height:180px;font-family:var(--f-mono);font-size:13px;line-height:1.55;resize:vertical}
+input[type="range"]{width:100%;accent-color:var(--accent);margin:0}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+ul.plain{margin:0;padding-left:18px;display:grid;gap:6px;font-size:14.5px;color:var(--fg-2)}
+ol.plain{margin:0;padding-left:20px;display:grid;gap:8px;font-size:14.5px;color:var(--fg-2)}
+
+/* ---------- status: bentuk + ikon + teks ---------- */
+.chip{display:inline-flex;align-items:center;gap:6px;font-weight:600;font-size:13.5px;padding:3px 10px 3px 6px;border-radius:999px;border:1px solid;white-space:nowrap}
+.chip .ico{width:16px;height:16px}
+.s0{color:var(--ok);background:var(--ok-bg);border-color:var(--ok-line)}
+.s1{color:var(--warn);background:var(--warn-bg);border-color:var(--warn-line)}
+.s2{color:var(--bad);background:var(--bad-bg);border-color:var(--bad-line)}
+.sx{color:var(--fg-3);background:var(--surface-2);border-color:var(--line-2)}
+.ico{flex:none;display:block}
+
+/* ---------- pemilih platform dan bulan ---------- */
+.seg{display:inline-flex;flex-wrap:wrap;gap:4px;padding:4px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.seg label{position:relative;cursor:pointer}
+.seg input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.seg label > span{display:block;padding:8px 12px;border-radius:7px;font-size:14px;font-weight:500;color:var(--fg-2);white-space:nowrap}
+.seg input:checked + span{background:var(--accent);color:var(--accent-fg)}
+.seg input:focus-visible + span{outline:2px solid var(--accent);outline-offset:2px}
+.seg.small label > span{padding:6px 10px;font-size:13px}
+.bulan{display:inline-flex;align-items:center;gap:6px}
+.bulan .tbtn{padding:8px 10px;font-size:15px}
+
+/* ---------- beranda ---------- */
+.hero{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:28px;align-items:end;padding-top:8px}
+.hero h1{font-family:var(--f-display);font-weight:600;font-size:clamp(40px,6.4vw,68px);line-height:1;letter-spacing:-.025em}
+.hero .konsep{font-size:clamp(17px,1.9vw,20px);line-height:1.5;max-width:44ch;margin-top:14px}
+.hero .aksi{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:20px}
+.legend{padding:18px;display:grid;gap:12px}
+.legend ul{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.legend li{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;font-size:14.5px;color:var(--fg-2)}
+.masalah{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.masalah article{padding:18px;display:grid;gap:8px;align-content:start}
+.masalah .no{font-family:var(--f-mono);font-size:12px;color:var(--fg-3)}
+.masalah h3{font-size:17px;font-weight:600;line-height:1.3}
+.masalah p{font-size:14.5px;color:var(--fg-2)}
+.masalah .jawab{appearance:none;border:0;border-top:1px dashed var(--line-2);background:none;text-align:left;font:inherit;font-size:13.5px;color:var(--accent);padding:8px 0 0;margin-top:2px;cursor:pointer}
+.masalah .jawab:hover{text-decoration:underline}
+.peta{padding:18px;display:grid;gap:14px}
+.peta-scroll{overflow-x:auto}
+.peta-grid{display:grid;grid-template-columns:minmax(118px,auto) repeat(12,minmax(26px,1fr));gap:6px 4px;align-items:center;min-width:470px}
+.peta-grid .lbl{font-size:13.5px;font-weight:600;padding-right:8px;white-space:nowrap}
+.peta-grid .hd{font-family:var(--f-mono);font-size:11px;color:var(--fg-3);text-align:center}
+.peta-grid .short{display:none}
+.cell{height:34px;border-radius:6px;display:grid;place-items:center;border:1px solid}
+.cell .ico{width:16px;height:16px}
+.audit-row{grid-column:2 / span 12;height:34px;border:1px dashed var(--line-2);border-radius:6px;display:flex;align-items:center;justify-content:space-between;padding:0 10px;font-size:12.5px;color:var(--fg-3);background:repeating-linear-gradient(135deg,transparent 0 8px,var(--surface-2) 8px 9px)}
+.audit-row b{color:var(--fg-2);font-weight:600}
+.audit-row span,.audit-row b{white-space:nowrap}
+.peta-cap{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:14px;color:var(--fg-2)}
+.peta-cap strong{color:var(--fg)}
+
+/* ---------- tabel ---------- */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+.tbl-card{border:1px solid var(--line);border-radius:var(--r);background:var(--surface);overflow:hidden;min-width:0}
+.tbl-card .tbl-h{padding:12px 14px 8px;display:grid;gap:2px}
+.tbl-card .tbl-h h3{font-size:15px;font-weight:600;line-height:1.35}
+.tbl-card .tbl-scroll{overflow-x:auto;border-top:1px solid var(--line)}
+.tbl-card table th:first-child{position:sticky;left:0;z-index:1;background:var(--surface)}
+.tbl-card thead th:first-child{background:var(--surface-2)}
+.tbl-card tr.lv1 th:first-child{background:var(--warn-bg)}
+.tbl-card tr.lv2 th:first-child{background:var(--bad-bg)}
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+th,td{text-align:left;vertical-align:top;padding:10px 14px;border-bottom:1px solid var(--line)}
+tr:last-child td,tr:last-child th{border-bottom:0}
+thead th{font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--fg-3);font-weight:600;background:var(--surface-2);vertical-align:bottom}
+tbody th{font-weight:600;color:var(--fg);white-space:nowrap}
+td.r,th.r{text-align:right}
+td.num{white-space:nowrap;font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:13.5px}
+tr.lv1 td,tr.lv1 th{background:var(--warn-bg)}
+tr.lv2 td,tr.lv2 th{background:var(--bad-bg)}
+tr.pilih td,tr.pilih th{box-shadow:inset 0 0 0 9999px var(--accent-soft)}
+.cmp{min-width:620px}
+.cmp col.c1{width:20%}
+.btn-sort{appearance:none;border:0;background:none;font:inherit;color:inherit;letter-spacing:inherit;text-transform:inherit;cursor:pointer;display:inline-flex;gap:4px;align-items:center;padding:0}
+.btn-sort .arah{font-family:var(--f-mono);font-size:11px;opacity:.8}
+
+/* ---------- cek legalitas ---------- */
+.leg{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:22px;align-items:start}
+.leg-list{display:grid;padding:4px 18px}
+.litem{display:grid;grid-template-columns:28px minmax(0,1fr);gap:12px;padding:16px 0;border-top:1px solid var(--line)}
+.litem:first-child{border-top:0}
+.litem .st-ico{width:24px;height:24px;margin-top:1px}
+.litem .st-ico .ico{width:24px;height:24px}
+.litem fieldset{border:0;margin:0;padding:0;min-width:0;display:grid;gap:8px}
+.litem legend{padding:0;font-weight:600;line-height:1.4}
+.litem .item-h{font-size:13.5px;color:var(--fg-3)}
+.ringkas{position:sticky;top:150px;display:grid;gap:14px}
+.skor{padding:18px;display:grid;gap:12px}
+.big{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.big b{font-family:var(--f-ui);font-size:52px;line-height:1;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.big span{color:var(--fg-3);font-size:14px}
+.meter{height:12px;border-radius:999px;display:grid;overflow:hidden;border:1px solid var(--line)}
+.meter i.m0{background:var(--ok-bg)} .meter i.m1{background:var(--warn-bg)} .meter i.m2{background:var(--bad-bg)}
+.meter-wrap{position:relative;padding-top:4px}
+.pin{position:absolute;top:0;width:4px;height:20px;margin-left:-2px;border-radius:2px;background:var(--fg);transition:left .25s ease}
+.meter-sc{position:relative;height:14px;font-family:var(--f-mono);font-size:11px;color:var(--fg-3);margin-top:4px}
+.meter-sc span{position:absolute;top:0;transform:translateX(-50%)}
+.meter-sc span:first-child{transform:none}.meter-sc span:last-child{transform:translateX(-100%)}
+.box{padding:16px 18px;display:grid;gap:10px;align-content:start}
+.box h3{font-size:14.5px;font-weight:600}
+.box ul{margin:0;padding-left:18px;display:grid;gap:6px;font-size:14px;color:var(--fg-2)}
+.privasi{font-size:13px;color:var(--fg-3);display:flex;gap:8px;align-items:flex-start}
+.privasi svg{width:16px;height:16px;flex:none;margin-top:2px}
+.rumus{font-family:var(--f-mono);font-size:13px;line-height:1.5;background:var(--surface-2);border-radius:8px;padding:10px 12px;color:var(--fg);overflow-wrap:anywhere}
+
+/* ---------- rekonsiliasi ---------- */
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.stat{padding:14px 16px;display:grid;gap:4px}
+.stat .lab{font-size:13px;color:var(--fg-3)}
+.stat .val{font-size:26px;font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums}
+.stat .sub{font-size:13px;color:var(--fg-2)}
+.chart{padding:16px 18px;display:grid;gap:10px;position:relative}
+.chart .plot{min-width:0}
+.chart svg{display:block;max-width:100%;overflow:visible}
+.chart .ax text{font:11px var(--f-mono);fill:var(--fg-3)}
+.chart .hit{cursor:crosshair;outline:none}
+.chart .hit:focus-visible{stroke:var(--accent);stroke-width:2;fill:var(--accent-soft);fill-opacity:.35}
+.chart .hit.pick{cursor:pointer}
+.tip{position:absolute;pointer-events:none;background:var(--tip-bg);color:var(--tip-fg);font-size:13px;line-height:1.45;padding:8px 10px;border-radius:8px;box-shadow:var(--shadow);max-width:250px;z-index:5}
+.tip[hidden]{display:none}
+.legend-seri{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13.5px;color:var(--fg-2)}
+.legend-seri span{display:inline-flex;align-items:center;gap:7px}
+.legend-seri svg{width:26px;height:12px}
+.csv-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.csv-grid label{font-weight:600;font-size:14.5px;display:grid;gap:6px}
+.csv-grid label .note{font-weight:400}
+.galat{border:1px solid var(--bad-line);background:var(--bad-bg);color:var(--fg);border-radius:8px;padding:12px 14px;display:grid;gap:6px;font-size:14px}
+.galat b{color:var(--bad)}
+.galat ul{margin:0;padding-left:18px}
+.galat:empty{display:none}
+.ringkas-csv{display:flex;flex-wrap:wrap;gap:8px}
+
+/* ---------- tanda bahaya ---------- */
+.hasil{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:16px;align-items:start}
+.hero-skor{padding:18px;display:grid;gap:12px;align-content:start}
+.hero-skor .angka{font-family:var(--f-ui);font-size:60px;line-height:1;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.hero-skor .angka small{font-size:18px;color:var(--fg-3);font-weight:500;letter-spacing:0;margin-left:4px}
+.penahan{font-size:14px;border-radius:8px;padding:10px 12px;background:var(--surface-2);color:var(--fg)}
+.penahan b{font-weight:600}
+.ind-name{display:grid;gap:2px;min-width:180px}
+.ind-name small{font-size:12.5px;color:var(--fg-3);font-weight:400;white-space:normal}
+
+/* ---------- uji sensitivitas ---------- */
+.slider{display:grid;grid-template-columns:minmax(0,1fr) minmax(120px,190px) 70px;gap:12px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.slider:first-of-type{border-top:0}
+.slider label{font-size:14px;color:var(--fg)}
+.slider label small{display:block;color:var(--fg-3);font-size:12.5px}
+.slider output{font-family:var(--f-mono);font-size:13.5px;text-align:right;font-variant-numeric:tabular-nums}
+.banding{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.banding .card{padding:16px 18px;display:grid;gap:10px;align-content:start}
+.mini{list-style:none;margin:0;padding:0;display:grid;gap:6px;font-size:13.5px}
+.mini li{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.berubah{outline:2px dashed var(--accent);outline-offset:2px;border-radius:999px}
+.info{border:1px solid var(--line-2);background:var(--surface-2);border-radius:8px;padding:10px 12px;font-size:14px}
+.info:empty{display:none}
+
+/* ---------- dasbor ---------- */
+.pd-card{padding:18px;display:grid;gap:12px;align-content:start}
+.pd-card .atas{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
+.pd-card .skor-k{font-size:40px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums}
+.pd-card .skor-k small{font-size:15px;color:var(--fg-3);font-weight:500;margin-left:3px}
+.pd-card h4{margin:0;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);font-weight:600}
+.watch{display:grid;gap:10px}
+.watch li{list-style:none}
+.watch ul{margin:0;padding:0;display:grid;gap:10px}
+.watch .item{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:start;padding:12px 14px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.aksi-reg{display:flex;flex-wrap:wrap;gap:8px}
+
+/* ---------- uji hitung ---------- */
+.uji-ring{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
+.uji-ring .angka{font-size:34px;font-weight:600;font-variant-numeric:tabular-nums}
+td.harap{font-family:var(--f-mono);font-size:13px;white-space:normal;min-width:120px}
+
+/* ---------- demo terpandu ---------- */
+.tour{position:fixed;z-index:50;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));width:min(400px,calc(100vw - 32px));background:var(--surface);color:var(--fg);border:1px solid var(--line-2);border-radius:12px;box-shadow:0 18px 50px -12px rgb(0 0 0 / .45);padding:16px 18px;display:grid;gap:10px}
+.tour[hidden]{display:none}
+.tour .t-atas{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.tour h3{font-size:17px;font-weight:600;outline:none}
+.tour p{font-size:14.5px;color:var(--fg-2)}
+.tour .t-prog{height:4px;border-radius:999px;background:var(--surface-2);overflow:hidden}
+.tour .t-prog i{display:block;height:100%;background:var(--accent);transition:width .25s ease}
+.tour .t-nav{display:flex;justify-content:space-between;gap:8px}
+.sorot{outline:3px solid var(--accent)!important;outline-offset:5px;border-radius:10px;scroll-margin-top:170px;scroll-margin-bottom:260px;animation:denyut 1.6s ease-in-out 2}
+@keyframes denyut{50%{outline-offset:9px}}
+.demo-list li{display:grid;grid-template-columns:52px minmax(0,1fr);gap:8px}
+.demo-list .dur{font-family:var(--f-mono);font-size:12.5px;color:var(--fg-3);padding-top:2px}
+
+/* ---------- placeholder lain ---------- */
+footer{border-top:1px solid var(--line);padding-block:20px 32px;font-size:13px;color:var(--fg-3)}
+footer .wrap{display:flex;flex-wrap:wrap;gap:6px 18px;justify-content:space-between}
+pre.salin{margin:0;font-family:var(--f-mono);font-size:12.5px;line-height:1.5;background:var(--surface-2);border-radius:8px;padding:12px;overflow:auto;max-height:280px;white-space:pre}
+
+/* ---------- responsif ---------- */
+@media (max-width:1000px){
+  .hasil{grid-template-columns:1fr}
+  .grid3{grid-template-columns:1fr}
+}
+@media (max-width:900px){
+  .hero{grid-template-columns:1fr;align-items:start}
+  .masalah{grid-template-columns:1fr}
+  .leg{grid-template-columns:1fr}
+  .ringkas{position:static}
+  .banding{grid-template-columns:1fr}
+  .csv-grid{grid-template-columns:1fr}
+  .grid2{grid-template-columns:1fr}
+}
+@media (max-width:640px){
+  .band .tag{display:none}
+  .band .wrap{font-size:12px;padding-block:6px}
+  .brand{min-height:48px}.brand b{font-size:19px}
+  .tbtn{padding:8px 9px}.tbtn .lbl-t{display:none}
+  .tabs{padding-bottom:4px}
+  .seg .pf{display:none}
+  .hp-only{display:block}
+  .legend li{grid-template-columns:1fr;gap:4px}
+  .peta-grid .short{display:inline}
+  .cmp{min-width:0}
+  .cmp thead{display:none}
+  .cmp,.cmp tbody,.cmp tr,.cmp th,.cmp td{display:block;width:auto}
+  .cmp tr{padding:12px 14px;border-bottom:1px solid var(--line)}
+  .cmp tr:last-child{border-bottom:0}
+  .cmp th,.cmp td{padding:0;border:0}
+  .cmp tbody th{margin-bottom:6px}
+  .cmp td{display:grid;grid-template-columns:96px minmax(0,1fr);gap:8px;font-size:14px;padding-block:3px}
+  .cmp td::before{content:attr(data-l);font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);padding-top:2px}
+  .peta{padding:14px}
+  .peta-grid{grid-template-columns:22px repeat(12,minmax(0,1fr));gap:5px 3px;min-width:0}
+  .peta-grid .lbl{padding-right:0}
+  .peta-grid .long{display:none}
+  .cell{height:28px}
+  .cell .ico{width:13px;height:13px}
+  .audit-row{font-size:11.5px;padding:0 8px}
+  .stats{grid-template-columns:1fr}
+  .stat .val{font-size:22px}
+  th,td{padding:9px 10px}
+  .slider{grid-template-columns:minmax(0,1fr) 64px}
+  /* tabel lima indikator menjadi kartu bertumpuk di HP */
+  #tbTable thead{display:none}
+  #tbTable,#tbTable tbody,#tbTable tr,#tbTable th,#tbTable td{display:block;width:auto}
+  #tbTable tr{padding:12px 14px;border-bottom:1px solid var(--line)}
+  #tbTable th,#tbTable td{padding:0;border:0;position:static}
+  #tbTable th{margin-bottom:6px;white-space:normal}
+  #tbTable td{display:grid;grid-template-columns:110px minmax(0,1fr);gap:8px;padding-block:3px;text-align:left;font-size:13.5px}
+  #tbTable td::before{content:attr(data-l);font-family:var(--f-ui);font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);padding-top:2px}
+  #tbTable td:empty{display:none}
+  #tbTable th,#tbTable td{background:transparent!important}
+  #tbTable tr.lv1{background:var(--warn-bg)} #tbTable tr.lv2{background:var(--bad-bg)}
+  #tbTabelKartu .hp-only{display:none}
+  .ind-name{min-width:0}
+  .slider input[type="range"]{grid-column:1 / -1;grid-row:2}
+  .hero-skor .angka{font-size:50px}
+  .tour{left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));width:auto;bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ---------- cetak: hanya ringkasan Dasbor Regulator ---------- */
+@media print{
+  :root{--bg:#fff;--surface:#fff;--surface-2:#f1f1f1;--fg:#000;--fg-2:#222;--fg-3:#444;--line:#999;--line-2:#777;--shadow:none;--accent:#1d2b7a;--accent-soft:#e8eaf5;color-scheme:light}
+  body{background:#fff;color:#000;font-size:11pt}
+  .top{position:static}
+  .band{background:#fff;color:#000;border:1.5px solid #000}
+  .band .tag{border:1px solid #000;background:#fff;color:#000}
+  .bar,footer,.toast,.tour,.skip,.no-print,[data-view]:not([data-view="regulator"]){display:none!important}
+  [data-view="regulator"]{display:grid!important}
+  .print-only{display:block}
+  .card,.tbl-card,.tbl-wrap{box-shadow:none;break-inside:avoid}
+  main{padding-block:12px 0}
+  .chip{border-width:1.5px}
+  a{color:#000;text-decoration:none}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Lewati ke isi</a>
+<div class="top">
+  <div class="band" role="note" aria-label="Peringatan prototipe">
+    <div class="wrap"><span class="tag">Prototipe</span><span class="txt"><b>PROTOTIPE KONSEP.</b> Data simulasi, bukan penilaian terhadap perusahaan nyata.</span></div>
+  </div>
+  <div class="bar">
+    <div class="wrap">
+      <a class="brand" href="#beranda" data-go="beranda" aria-label="TelusurDana, ke beranda">
+        <svg viewBox="0 0 28 28" aria-hidden="true"><rect x="2.5" y="4.5" width="15" height="19" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M6.5 10h7M6.5 14h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="18.5" cy="17.5" r="5" fill="var(--surface)" stroke="currentColor" stroke-width="2"/><path d="M22.2 21.2l3.3 3.3" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M16.4 17.6l1.5 1.5 2.8-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <b>TelusurDana</b>
+      </a>
+      <div class="tools">
+        <button class="tbtn" type="button" data-demo="mulai" aria-label="Mulai demo terpandu" title="Mulai demo terpandu"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3.5v9l7-4.5z" fill="currentColor"/></svg><span class="lbl-t">Mulai demo</span></button>
+        <button class="tbtn" id="themeBtn" type="button"></button>
+      </div>
+      <nav class="tabs" aria-label="Bagian aplikasi" id="tabs"></nav>
+    </div>
+  </div>
+</div>
+
+<main class="wrap" id="main" tabindex="-1">
+  <noscript><p class="card pad">Prototipe ini butuh JavaScript untuk berjalan.</p></noscript>
+
+  <!-- ============================ 1. BERANDA ============================ -->
+  <section class="view" data-view="beranda" aria-labelledby="h-beranda">
+    <div class="hero">
+      <div>
+        <p class="eyebrow">Asurans berkelanjutan untuk platform pindar</p>
+        <h1 id="h-beranda" style="margin-top:10px">TelusurDana</h1>
+        <p class="konsep">TelusurDana mencocokkan laporan penyelenggara dengan mutasi rekening penampung setiap hari, lalu memberi lampu hijau, kuning, atau merah beserta alasannya, tanpa menunggu audit tahunan.</p>
+        <p class="note" style="margin-top:8px">Prototipe ini memakai data bulanan simulasi untuk tiga platform fiktif.</p>
+        <div class="aksi">
+          <button class="btn primary" type="button" data-demo="mulai"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M5 3.5v9l7-4.5z" fill="currentColor"/></svg>Mulai demo</button>
+          <button class="btn" type="button" data-go="tanda-bahaya">Lihat Tanda Bahaya</button>
+        </div>
+      </div>
+      <div class="card legend" id="legendLampu" aria-label="Cara membaca lampu">
+        <p class="eyebrow">Cara membaca lampu</p>
+        <ul>
+          <li><span data-chip="0"></span><span>Skor 75 ke atas. Tidak ada tanda yang perlu ditindaklanjuti. Bukan jaminan.</span></li>
+          <li><span data-chip="1"></span><span>Skor 45 sampai 74, atau ada aturan penahan. Ajukan pertanyaan ke penyelenggara.</span></li>
+          <li><span data-chip="2"></span><span>Skor di bawah 45, atau selisih saldo dan dana terafiliasi sama-sama merah. Perlu pemeriksaan lanjutan.</span></li>
+        </ul>
+        <p class="vonis">Skor merah adalah peringatan dini untuk diperiksa manusia, bukan vonis.</p>
+      </div>
+    </div>
+
+    <div class="sec-h"><h2>Tiga masalah yang dijawab</h2></div>
+    <div class="masalah">
+      <article class="card">
+        <span class="no">Masalah 1</span>
+        <h3>Pemberi dana sulit memeriksa sendiri</h3>
+        <p>Status izin dan auditor sebuah platform tersebar di banyak tempat dan jarang dicek sebelum dana ditaruh.</p>
+        <button class="jawab" type="button" data-go="legalitas">Dijawab modul Legalitas &rarr;</button>
+      </article>
+      <article class="card">
+        <span class="no">Masalah 2</span>
+        <h3>Laporan sulit dicocokkan dengan aliran dana</h3>
+        <p>Saldo dan pencairan yang dilihat pemberi dana berasal dari laporan penyelenggara sendiri, tanpa pembanding dari bank.</p>
+        <button class="jawab" type="button" data-go="rekonsiliasi">Dijawab modul Rekonsiliasi &rarr;</button>
+      </article>
+      <article class="card">
+        <span class="no">Masalah 3</span>
+        <h3>Pola janggal baru terlihat setelah dana macet</h3>
+        <p>Audit tahunan memeriksa periode yang sudah lewat, sehingga penyimpangan di tengah tahun terlambat terlihat.</p>
+        <button class="jawab" type="button" data-go="tanda-bahaya">Dijawab Mesin Tanda Bahaya &rarr;</button>
+      </article>
+    </div>
+
+    <div class="card peta" id="petaKartu" aria-labelledby="h-peta">
+      <div class="sec-h"><h3 id="h-peta">Peta lampu dua belas bulan</h3><span class="asumsi">Data simulasi</span></div>
+      <div class="peta-scroll"><div class="peta-grid" id="peta"></div></div>
+      <div class="peta-cap" id="petaCap"></div>
+    </div>
+
+    <div class="sec-h"><h2>Audit tahunan vs TelusurDana</h2></div>
+    <div class="tbl-wrap" id="cmpKartu">
+      <table class="cmp">
+        <colgroup><col class="c1"><col><col></colgroup>
+        <thead><tr><th scope="col">Aspek</th><th scope="col">Audit tahunan</th><th scope="col">TelusurDana (rancangan)</th></tr></thead>
+        <tbody id="cmpBody"></tbody>
+      </table>
+    </div>
+    <p class="note">TelusurDana melengkapi audit tahunan, bukan menggantikannya, dan tidak memberi opini atas laporan keuangan.</p>
+  </section>
+
+  <!-- ============================ 2. LEGALITAS ============================ -->
+  <section class="view" data-view="legalitas" aria-labelledby="h-leg" hidden>
+    <div class="intro">
+      <div class="sec-h"><span class="kk">02</span><h2 id="h-leg">Cek Legalitas dan Auditor</h2></div>
+      <p class="lead">Daftar periksa per platform. Jawaban awal adalah contoh fiktif dan bisa diubah. Aplikasi tidak memverifikasi izin atau auditor sendiri, jadi setiap butir harus dicek manual di situs resmi.</p>
+    </div>
+    <div class="toolbar">
+      <div class="seg" role="radiogroup" aria-label="Pilih platform" id="legPlat"></div>
+      <button class="btn" type="button" id="legReset">Kembalikan jawaban contoh</button>
+    </div>
+    <div class="leg">
+      <div class="card leg-list" id="legList"></div>
+      <aside class="ringkas" aria-label="Ringkasan kelengkapan">
+        <div class="card skor" aria-live="polite">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+            <p class="eyebrow">Skor kelengkapan (I5)</p><span id="legChip"></span>
+          </div>
+          <div class="big"><b id="legPct">0%</b><span id="legFrac"></span></div>
+          <div class="meter-wrap">
+            <div class="meter" id="legMeter" aria-hidden="true"></div>
+            <span class="pin" id="legPin" style="left:0%"></span>
+            <div class="meter-sc" id="legSkala" aria-hidden="true"></div>
+          </div>
+          <p class="rumus">Kelengkapan = jumlah butir "ya" / jumlah butir x 100</p>
+          <p class="note" id="legAmbang"></p>
+          <p><span class="asumsi">Asumsi rancangan, belum divalidasi</span></p>
+          <p class="note">Hasil ini menjadi indikator I5 di Mesin Tanda Bahaya. Perubahan jawaban langsung ikut dihitung di layar lain selama halaman terbuka.</p>
+        </div>
+        <div class="card box">
+          <h3>Pertanyaan untuk penyelenggara</h3>
+          <div id="legNotes"></div>
+        </div>
+        <div class="card box">
+          <h3>Verifikasi manual di situs resmi</h3>
+          <p style="font-size:14px"><a href="https://www.ojk.go.id/" target="_blank" rel="noopener">ojk.go.id</a> <span class="note">(Otoritas Jasa Keuangan)</span></p>
+          <ul>
+            <li>Izin: cari "daftar penyelenggara fintech lending berizin".</li>
+            <li>Auditor: cari "Data AP dan KAP Terdaftar di OJK".</li>
+            <li>Keaslian laporan auditor: pindai kode QR pada laporan dan pastikan tautannya mengarah ke <span class="mono">pelitaapi.kemenkeu.go.id</span> (Surat Edaran SE-4/PPPK/2024).</li>
+          </ul>
+          <p class="privasi"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5l5.5 2v4c0 3.4-2.3 6-5.5 7-3.2-1-5.5-3.6-5.5-7v-4z" fill="none" stroke="currentColor" stroke-width="1.4"/></svg><span>Aplikasi tidak mengambil data dari situs mana pun. Jawaban hanya tersimpan selama halaman terbuka.</span></p>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============================ 3. REKONSILIASI ============================ -->
+  <section class="view" data-view="rekonsiliasi" aria-labelledby="h-rek" hidden>
+    <div class="intro">
+      <div class="sec-h"><span class="kk">03</span><h2 id="h-rek">Rekonsiliasi Dana</h2><span class="asumsi">Data simulasi</span></div>
+      <p class="lead">Rekonsiliasi berarti mencocokkan dua catatan atas uang yang sama. Saldo menurut laporan penyelenggara dicocokkan dengan saldo rekening penampung menurut mutasi bank, bulan demi bulan.</p>
+    </div>
+    <div class="toolbar"><div class="seg" role="radiogroup" aria-label="Pilih platform" id="rekPlat"></div></div>
+    <div class="stats" id="rekStats"></div>
+    <div class="card chart" id="rekChart" aria-labelledby="h-rekc">
+      <div class="sec-h"><h3 id="h-rekc">Selisih saldo laporan terhadap rekening, 12 bulan</h3></div>
+      <p class="note">Garis menunjukkan selisih dalam persen saldo rekening. Pita abu-abu adalah zona hijau (di bawah 0,5%). Garis putus-putus adalah batas merah 2%. Arahkan kursor atau tekan Tab ke grafik untuk melihat angka tiap bulan.</p>
+      <div class="plot" id="rekSvg"></div>
+      <div class="tip" id="rekTip" hidden></div>
+    </div>
+    <div class="tbl-card" id="rekTabelKartu">
+      <div class="tbl-h"><h3 id="rekCap">Saldo laporan dan saldo rekening (Rp juta)</h3><p class="note hp-only">Geser tabel ke samping untuk melihat semua kolom.</p></div>
+      <div class="tbl-scroll" role="region" aria-labelledby="rekCap" tabindex="0">
+        <table id="rekTable" aria-labelledby="rekCap">
+          <thead><tr><th scope="col">Bulan</th><th scope="col" class="r">Saldo laporan</th><th scope="col" class="r">Saldo rekening</th><th scope="col" class="r">Selisih (Rp juta)</th><th scope="col" class="r">Selisih (%)</th><th scope="col">Status</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card box">
+      <h3>Rumus dan ambang (indikator I2)</h3>
+      <p class="rumus">Selisih saldo (%) = |saldo laporan - saldo rekening| / saldo rekening x 100</p>
+      <p class="note" id="rekAmbang"></p>
+      <p><span class="asumsi">Asumsi rancangan, belum divalidasi</span></p>
+    </div>
+
+    <div class="card pad" style="display:grid;gap:14px" aria-labelledby="h-csv">
+      <div class="sec-h"><h3 id="h-csv">Pencocokan transaksi dari CSV</h3></div>
+      <p class="note">Tempel data dengan tiga kolom: tanggal, referensi, jumlah (rupiah). Baris judul boleh ada. Jika jumlah memakai koma desimal, pisahkan kolom dengan titik koma (;). Transaksi dianggap cocok bila referensi dan jumlahnya sama.</p>
+      <div class="csv-grid">
+        <label for="csvA">Laporan penyelenggara <span class="note">sumber pertama</span>
+          <textarea id="csvA" spellcheck="false" placeholder="tanggal,referensi,jumlah&#10;2026-09-01,PCR-0901,125000000"></textarea></label>
+        <label for="csvB">Mutasi rekening penampung <span class="note">sumber kedua</span>
+          <textarea id="csvB" spellcheck="false" placeholder="tanggal,referensi,jumlah&#10;2026-09-01,PCR-0901,125000000"></textarea></label>
+      </div>
+      <div class="toolbar">
+        <button class="btn" type="button" id="csvContoh">Isi contoh</button>
+        <button class="btn primary" type="button" id="csvCocok">Cocokkan</button>
+        <button class="btn" type="button" id="csvHapus">Kosongkan</button>
+      </div>
+      <div class="galat" id="csvGalat" role="alert"></div>
+      <div id="csvHasil" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <!-- ============================ 4. TANDA BAHAYA ============================ -->
+  <section class="view" data-view="tanda-bahaya" aria-labelledby="h-tb" hidden>
+    <div class="intro">
+      <div class="sec-h"><span class="kk">04</span><h2 id="h-tb">Mesin Tanda Bahaya</h2><span class="asumsi">Asumsi rancangan, belum divalidasi</span></div>
+      <p class="lead">Lima indikator dihitung untuk platform dan bulan yang dipilih, lalu digabung menjadi skor 0 sampai 100. Makin tinggi skor, makin sedikit tanda bahaya.</p>
+    </div>
+    <div class="toolbar">
+      <div class="seg" role="radiogroup" aria-label="Pilih platform" id="tbPlat"></div>
+      <div id="tbBulan"></div>
+    </div>
+    <p class="info" id="tbInfo"></p>
+    <div class="hasil">
+      <div class="card hero-skor" id="tbHero" aria-live="polite"></div>
+      <div class="card box" id="tbAlasan"></div>
+    </div>
+    <div class="tbl-card" id="tbTabelKartu">
+      <div class="tbl-h"><h3 id="tbCap">Lima indikator</h3><p class="note hp-only">Geser tabel ke samping untuk melihat semua kolom.</p></div>
+      <div class="tbl-scroll" role="region" aria-labelledby="tbCap" tabindex="0">
+        <table id="tbTable" aria-labelledby="tbCap">
+          <thead><tr><th scope="col">Indikator</th><th scope="col" class="r">Nilai</th><th scope="col">Ambang</th><th scope="col" class="r">Bobot</th><th scope="col" class="r">Skor indikator</th><th scope="col" class="r">Kontribusi</th><th scope="col">Status</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card chart" id="tbChart" aria-labelledby="h-tbc">
+      <div class="sec-h"><h3 id="h-tbc">Tren skor 12 bulan</h3></div>
+      <p class="note">Bentuk titik mengikuti status: lingkaran hijau, segitiga kuning, kotak merah. Klik atau tekan Enter pada sebuah bulan untuk memilihnya.</p>
+      <div class="plot" id="tbSvg"></div>
+      <div class="tip" id="tbTip" hidden></div>
+    </div>
+    <p class="vonis">Skor merah adalah peringatan dini untuk diperiksa manusia, bukan vonis.</p>
+  </section>
+
+  <!-- ============================ 5. UJI SENSITIVITAS ============================ -->
+  <section class="view" data-view="sensitivitas" aria-labelledby="h-sens" hidden>
+    <div class="intro">
+      <div class="sec-h"><span class="kk">05</span><h2 id="h-sens">Uji Sensitivitas</h2><span class="asumsi">Asumsi rancangan, belum divalidasi</span></div>
+      <p class="lead">Geser ambang dan bobot untuk melihat seberapa peka hasil terhadap asumsi. Setelan di sini hanya dipakai di layar ini. Layar lain tetap memakai setelan bawaan.</p>
+    </div>
+    <div class="toolbar">
+      <div class="seg" role="radiogroup" aria-label="Pilih platform" id="sensPlat"></div>
+      <div id="sensBulan"></div>
+      <button class="btn" type="button" id="sensReset">Kembalikan ke bawaan</button>
+    </div>
+    <p class="info" id="sensInfo" role="status"></p>
+    <div class="banding" id="sensBanding" aria-live="polite"></div>
+    <div class="grid2">
+      <div class="card pad" style="display:grid;gap:4px;align-content:start">
+        <h3 class="h3">Bobot indikator</h3>
+        <p class="note" id="sensTotal"></p>
+        <div id="sensBobot"></div>
+      </div>
+      <div class="card pad" style="display:grid;gap:4px;align-content:start">
+        <h3 class="h3">Ambang</h3>
+        <p class="note">Batas merah otomatis disesuaikan agar tidak melewati batas hijau.</p>
+        <div id="sensAmbang"></div>
+      </div>
+    </div>
+    <div class="tbl-card">
+      <div class="tbl-h"><h3 id="sensCap">Tiga platform pada bulan terpilih</h3></div>
+      <div class="tbl-scroll" role="region" aria-labelledby="sensCap" tabindex="0">
+        <table id="sensTable" aria-labelledby="sensCap">
+          <thead><tr><th scope="col">Platform</th><th scope="col" class="r">Skor bawaan</th><th scope="col">Status bawaan</th><th scope="col" class="r">Skor setelan</th><th scope="col">Status setelan</th><th scope="col">Bulan pertama non-hijau (bawaan / setelan)</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ 6. DASBOR PEMBERI DANA ============================ -->
+  <section class="view" data-view="pemberi-dana" aria-labelledby="h-pd" hidden>
+    <div class="intro">
+      <div class="sec-h"><span class="kk">06</span><h2 id="h-pd">Dasbor Pemberi Dana</h2><span class="asumsi">Asumsi rancangan, belum divalidasi</span></div>
+      <p class="lead">Ringkasan untuk pemberi dana sebelum menaruh atau menambah dana. Setiap kartu memuat status, tiga alasan utama, dan pertanyaan yang bisa diajukan ke penyelenggara.</p>
+    </div>
+    <div class="toolbar"><div id="pdBulan"></div></div>
+    <p class="info" id="pdInfo"></p>
+    <div class="grid3" id="pdKartu"></div>
+    <p class="vonis">Skor merah adalah peringatan dini untuk diperiksa manusia, bukan vonis.</p>
+  </section>
+
+  <!-- ============================ 7. DASBOR REGULATOR ============================ -->
+  <section class="view" data-view="regulator" aria-labelledby="h-reg" hidden>
+    <div class="print-only" id="regCetakJudul"></div>
+    <div class="intro">
+      <div class="sec-h"><span class="kk">07</span><h2 id="h-reg">Dasbor Regulator</h2><span class="asumsi">Asumsi rancangan, belum divalidasi</span></div>
+      <p class="lead no-print">Peringkat platform, tren skor, dan daftar pantauan untuk pengawas. Klik judul kolom untuk mengurutkan tabel.</p>
+    </div>
+    <div class="toolbar no-print">
+      <div id="regBulan"></div>
+      <div class="aksi-reg">
+        <button class="btn" type="button" id="regCSV">Ekspor CSV</button>
+        <button class="btn" type="button" id="regCetak">Cetak ringkasan</button>
+      </div>
+    </div>
+    <p class="note no-print" id="regCatatanCetak" hidden>Cetak ringkasan hanya tersedia saat berkas index.html dibuka langsung di browser. Halaman terbit ini tidak dapat membuka dialog cetak.</p>
+    <p class="info" id="regInfo"></p>
+    <div class="tbl-card" id="regTabelKartu">
+      <div class="tbl-h"><h3 id="regCap">Peringkat platform</h3></div>
+      <div class="tbl-scroll" role="region" aria-labelledby="regCap" tabindex="0">
+        <table id="regTable" aria-labelledby="regCap">
+          <thead><tr>
+            <th scope="col" data-kunci="nama"><button class="btn-sort" type="button">Platform <span class="arah"></span></button></th>
+            <th scope="col" class="r" data-kunci="skor"><button class="btn-sort" type="button">Skor <span class="arah"></span></button></th>
+            <th scope="col" data-kunci="status"><button class="btn-sort" type="button">Status <span class="arah"></span></button></th>
+            <th scope="col" class="r" data-kunci="delta"><button class="btn-sort" type="button">Perubahan 3 bulan <span class="arah"></span></button></th>
+            <th scope="col" class="r" data-kunci="merah"><button class="btn-sort" type="button">Indikator merah <span class="arah"></span></button></th>
+            <th scope="col">Aturan penahan</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card chart" id="regChart" aria-labelledby="h-regc">
+      <div class="sec-h"><h3 id="h-regc">Tren skor tiga platform</h3></div>
+      <div class="legend-seri" id="regLegend"></div>
+      <div class="plot" id="regSvg"></div>
+      <div class="tip" id="regTip" hidden></div>
+    </div>
+    <div class="card box watch" id="regWatch" aria-labelledby="h-watch"></div>
+    <p class="vonis">Skor merah adalah peringatan dini untuk diperiksa manusia, bukan vonis.</p>
+  </section>
+
+  <!-- ============================ 8. DEMO ============================ -->
+  <section class="view" data-view="demo" aria-labelledby="h-demo" hidden>
+    <div class="intro">
+      <div class="sec-h"><span class="kk">08</span><h2 id="h-demo">Demo tiga menit</h2></div>
+      <p class="lead">Panduan bertahap untuk presentasi. Setiap langkah membuka layar yang tepat dan menyorot bagian yang dibahas. Durasi di kiri adalah perkiraan waktu bicara.</p>
+    </div>
+    <div class="toolbar"><button class="btn primary" type="button" data-demo="mulai"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M5 3.5v9l7-4.5z" fill="currentColor"/></svg>Mulai demo</button><span class="note" id="demoTotal"></span></div>
+    <div class="card pad"><ol class="plain demo-list" id="demoList"></ol></div>
+    <p class="note">Tombol Berikutnya dan Sebelumnya ada di panel demo. Tekan Esc untuk menutup, atau tombol panah kiri dan kanan saat panel aktif.</p>
+  </section>
+
+  <!-- ============================ 9. TENTANG ============================ -->
+  <section class="view" data-view="tentang" aria-labelledby="h-ten" hidden>
+    <div class="intro">
+      <div class="sec-h"><span class="kk">09</span><h2 id="h-ten">Tentang TelusurDana</h2></div>
+      <p class="lead">TelusurDana adalah rancangan alat asurans berkelanjutan untuk platform pinjaman daring. Tujuannya memberi peringatan dini kepada pemberi dana dan pengawas di antara dua audit tahunan, dengan alasan yang bisa diperiksa ulang.</p>
+    </div>
+    <div class="grid2">
+      <div class="card box">
+        <h3>Cara kerja skor</h3>
+        <ol class="plain">
+          <li>Hitung lima indikator dari data bulan terpilih.</li>
+          <li>Beri status tiap indikator: hijau, kuning, atau merah sesuai ambang.</li>
+          <li>Ubah status menjadi skor indikator: hijau 100, kuning 50, merah 0.</li>
+          <li>Skor total = jumlah (bobot x skor indikator) / 100. Bobot bawaan 20% masing-masing.</li>
+          <li>Status total: hijau 75 ke atas, kuning 45 sampai 74, merah di bawah 45.</li>
+          <li>Aturan penahan: bila satu indikator saja merah, status total paling baik kuning. Bila I1 dan I2 sama-sama merah, status total merah. Penahan hanya berlaku untuk indikator yang bobotnya lebih dari nol.</li>
+        </ol>
+      </div>
+      <div class="card box" id="tenContoh"></div>
+    </div>
+    <div class="tbl-card">
+      <div class="tbl-h"><h3 id="tenCap">Ringkasan indikator</h3></div>
+      <div class="tbl-scroll" role="region" aria-labelledby="tenCap" tabindex="0">
+        <table id="tenTable" aria-labelledby="tenCap">
+          <thead><tr><th scope="col">Indikator</th><th scope="col">Rumus</th><th scope="col">Hijau</th><th scope="col">Kuning</th><th scope="col">Merah</th><th scope="col" class="r">Bobot</th><th scope="col">Status asumsi</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card box">
+      <h3>Tabel untuk Lampiran esai</h3>
+      <p class="note">Tombol ini menyalin dua tabel sebagai teks berpemisah tab: ringkasan indikator dan nilai tiga platform fiktif pada bulan 12. Nilainya dihitung dengan setelan bawaan dan jawaban legalitas contoh, sama dengan Uji Hitung. Tempel ke Excel atau Word, lalu ubah menjadi tabel.</p>
+      <div class="toolbar"><button class="btn primary" type="button" id="tenSalin">Salin tabel indikator</button></div>
+      <pre class="salin" id="tenTeks" tabindex="0" aria-label="Teks tabel yang akan disalin"></pre>
+    </div>
+    <div class="grid2">
+      <div class="card box">
+        <h3>Daftar asumsi</h3>
+        <ul class="plain" id="tenAsumsi"></ul>
+      </div>
+      <div class="card box">
+        <h3>Batasan</h3>
+        <ul class="plain">
+          <li>Semua platform dan angka adalah simulasi. Hasilnya tidak menilai perusahaan nyata.</li>
+          <li>Ambang dan bobot belum diuji ke belakang pada data nyata, jadi belum ada ukuran ketepatan.</li>
+          <li>Data bulanan dipakai agar mudah dibaca. Rancangan sebenarnya memakai data harian.</li>
+          <li>Aplikasi tidak memverifikasi izin atau auditor. Daftar periksa legalitas diisi pengguna.</li>
+          <li>Lampu merah tidak membuktikan kecurangan. Perlu pemeriksaan manusia sebelum ada tindakan.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card box">
+      <h3>Kebijakan data</h3>
+      <ul class="plain">
+        <li>Prinsip minimisasi data sesuai Undang-Undang Nomor 27 Tahun 2022 tentang Pelindungan Data Pribadi. Aplikasi hanya memakai angka agregat per platform per bulan, tanpa nama, nomor identitas, atau rekening pribadi.</li>
+        <li>Tidak ada server, akun, atau pengiriman data. Semua hitungan berjalan di browser.</li>
+        <li>Penyimpanan lokal browser hanya dipakai untuk preferensi tema dan bobot Uji Sensitivitas. Bila diblokir, aplikasi tetap berjalan.</li>
+        <li>Teks CSV yang ditempel hanya diproses di halaman ini dan hilang saat halaman ditutup.</li>
+      </ul>
+    </div>
+    <p class="note" id="tenVersi"></p>
+  </section>
+
+  <!-- ============================ 10. UJI HITUNG ============================ -->
+  <section class="view" data-view="uji-hitung" aria-labelledby="h-uji" hidden>
+    <div class="intro">
+      <div class="sec-h"><span class="kk">10</span><h2 id="h-uji">Uji Hitung</h2></div>
+      <p class="lead">Pemeriksaan otomatis atas rumus. Nilai harapan dihitung manual dari data mentah dan ditulis langsung di kode, lalu dibandingkan dengan hasil mesin skor.</p>
+    </div>
+    <div class="card pad uji-ring" id="ujiRingkas" aria-live="polite"></div>
+    <div class="toolbar"><button class="btn" type="button" id="ujiUlang">Jalankan ulang</button></div>
+    <div class="tbl-card">
+      <div class="tbl-h"><h3 id="ujiCap">Hasil pemeriksaan</h3></div>
+      <div class="tbl-scroll" role="region" aria-labelledby="ujiCap" tabindex="0">
+        <table id="ujiTable" aria-labelledby="ujiCap">
+          <thead><tr><th scope="col">No</th><th scope="col">Pemeriksaan</th><th scope="col">Harapan</th><th scope="col">Hasil</th><th scope="col">Status</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="tour" id="tour" role="dialog" aria-modal="false" aria-labelledby="tourJudul" hidden>
+  <div class="t-atas"><span class="eyebrow" id="tourLangkah"></span><button class="tbtn" type="button" id="tourTutup" aria-label="Tutup demo">Tutup</button></div>
+  <h3 id="tourJudul" tabindex="-1"></h3>
+  <p id="tourTeks"></p>
+  <div class="t-prog" aria-hidden="true"><i id="tourProg"></i></div>
+  <div class="t-nav"><button class="btn small" type="button" id="tourPrev">Sebelumnya</button><button class="btn small primary" type="button" id="tourNext">Berikutnya</button></div>
+</div>
+<p class="toast" id="toast" role="status" aria-live="polite"></p>
+<footer><div class="wrap"><span id="ver"></span><span>Semua platform dan angka bersifat fiktif.</span></div></footer>
+
+<script>
+(function(){
+"use strict";
+document.documentElement.lang = "id";
+
+/* =====================================================================
+   DATA
+   Semua angka FIKTIF untuk simulasi. Satuan Rp juta, kecuali CSV contoh
+   (rupiah penuh). Satu baris = satu bulan, bulan 1 sampai 12.
+   Arti kolom:
+     total_pencairan       dana keluar dari rekening penampung ke penerima dana (mutasi bank)
+     pencairan_terafiliasi bagian pencairan yang masuk ke pihak terafiliasi penyelenggara
+     saldo_laporan         saldo rekening penampung menurut laporan penyelenggara
+     saldo_rekening        saldo rekening penampung menurut mutasi bank
+     pendanaan_total       pendanaan yang disalurkan bulan itu (disederhanakan = total pencairan)
+     pendanaan_5_terbesar  pendanaan untuk lima penerima dana terbesar
+     outstanding           sisa pokok pinjaman yang belum lunas
+     outstanding_macet_90  bagian outstanding yang menunggak lebih dari 90 hari
+   Setiap angka = basis x persentase skenario, dibulatkan ke Rp juta terdekat,
+   jadi rasio di layar bisa dilacak dengan kalkulator.
+   Skenario: A sehat sepanjang tahun; B bergeser ke kuning mulai bulan 8
+   (selisih saldo dan konsentrasi naik); C memburuk mulai bulan 6, rasio
+   terafiliasi 67% di bulan 12 adalah ILUSTRASI.
+   ===================================================================== */
+const VERSI = "1.2";
+const TANGGAL = "24 Oktober 2026";
+const MODE = /*MODE*/"mandiri";   // "mandiri" = berkas index.html dibuka di browser; "artifact" = halaman terbit di claude.ai
+const DATA = {
+  A: { nama:"Platform Contoh A", bulan:[
+    /* Bulan  1 */ { total_pencairan:60000, pencairan_terafiliasi:2280, saldo_laporan:15018, saldo_rekening:15000, pendanaan_total:60000, pendanaan_5_terbesar:7920, outstanding:180000, outstanding_macet_90:4320 },
+    /* Bulan  2 */ { total_pencairan:60500, pencairan_terafiliasi:2480, saldo_laporan:15123, saldo_rekening:15150, pendanaan_total:60500, pendanaan_5_terbesar:8349, outstanding:182000, outstanding_macet_90:4550 },
+    /* Bulan  3 */ { total_pencairan:61000, pencairan_terafiliasi:2379, saldo_laporan:15332, saldo_rekening:15300, pendanaan_total:61000, pendanaan_5_terbesar:7869, outstanding:184000, outstanding_macet_90:4232 },
+    /* Bulan  4 */ { total_pencairan:61500, pencairan_terafiliasi:2583, saldo_laporan:15436, saldo_rekening:15450, pendanaan_total:61500, pendanaan_5_terbesar:8672, outstanding:186000, outstanding_macet_90:4836 },
+    /* Bulan  5 */ { total_pencairan:62000, pencairan_terafiliasi:2480, saldo_laporan:15623, saldo_rekening:15600, pendanaan_total:62000, pendanaan_5_terbesar:8370, outstanding:188000, outstanding_macet_90:4700 },
+    /* Bulan  6 */ { total_pencairan:62500, pencairan_terafiliasi:2312, saldo_laporan:15788, saldo_rekening:15750, pendanaan_total:62500, pendanaan_5_terbesar:8688, outstanding:190000, outstanding_macet_90:4560 },
+    /* Bulan  7 */ { total_pencairan:63000, pencairan_terafiliasi:2583, saldo_laporan:15879, saldo_rekening:15900, pendanaan_total:63000, pendanaan_5_terbesar:9009, outstanding:192000, outstanding_macet_90:5184 },
+    /* Bulan  8 */ { total_pencairan:63500, pencairan_terafiliasi:2476, saldo_laporan:16079, saldo_rekening:16050, pendanaan_total:63500, pendanaan_5_terbesar:8636, outstanding:194000, outstanding_macet_90:4850 },
+    /* Bulan  9 */ { total_pencairan:64000, pencairan_terafiliasi:2560, saldo_laporan:16168, saldo_rekening:16200, pendanaan_total:64000, pendanaan_5_terbesar:8384, outstanding:196000, outstanding_macet_90:5096 },
+    /* Bulan 10 */ { total_pencairan:64500, pencairan_terafiliasi:2709, saldo_laporan:16368, saldo_rekening:16350, pendanaan_total:64500, pendanaan_5_terbesar:9030, outstanding:198000, outstanding_macet_90:4752 },
+    /* Bulan 11 */ { total_pencairan:65000, pencairan_terafiliasi:2470, saldo_laporan:16526, saldo_rekening:16500, pendanaan_total:65000, pendanaan_5_terbesar:8905, outstanding:200000, outstanding_macet_90:5000 },
+    /* Bulan 12 */ { total_pencairan:65500, pencairan_terafiliasi:2620, saldo_laporan:16627, saldo_rekening:16650, pendanaan_total:65500, pendanaan_5_terbesar:8777, outstanding:202000, outstanding_macet_90:5252 }
+  ]},
+  B: { nama:"Platform Contoh B", bulan:[
+    /* Bulan  1 */ { total_pencairan:50000, pencairan_terafiliasi:2800, saldo_laporan:13023, saldo_rekening:13000, pendanaan_total:50000, pendanaan_5_terbesar:7550, outstanding:150000, outstanding_macet_90:5100 },
+    /* Bulan  2 */ { total_pencairan:50400, pencairan_terafiliasi:3074, saldo_laporan:13091, saldo_rekening:13120, pendanaan_total:50400, pendanaan_5_terbesar:7358, outstanding:151500, outstanding_macet_90:4696 },
+    /* Bulan  3 */ { total_pencairan:50800, pencairan_terafiliasi:2946, saldo_laporan:13260, saldo_rekening:13240, pendanaan_total:50800, pendanaan_5_terbesar:8230, outstanding:153000, outstanding_macet_90:5508 },
+    /* Bulan  4 */ { total_pencairan:51200, pencairan_terafiliasi:3226, saldo_laporan:13395, saldo_rekening:13360, pendanaan_total:51200, pendanaan_5_terbesar:7885, outstanding:154500, outstanding_macet_90:5098 },
+    /* Bulan  5 */ { total_pencairan:51600, pencairan_terafiliasi:3044, saldo_laporan:13454, saldo_rekening:13480, pendanaan_total:51600, pendanaan_5_terbesar:8669, outstanding:156000, outstanding_macet_90:5928 },
+    /* Bulan  6 */ { total_pencairan:52000, pencairan_terafiliasi:3328, saldo_laporan:13629, saldo_rekening:13600, pendanaan_total:52000, pendanaan_5_terbesar:8268, outstanding:157500, outstanding_macet_90:5512 },
+    /* Bulan  7 */ { total_pencairan:52400, pencairan_terafiliasi:3144, saldo_laporan:13753, saldo_rekening:13720, pendanaan_total:52400, pendanaan_5_terbesar:9065, outstanding:159000, outstanding_macet_90:6201 },
+    /* Bulan  8 */ { total_pencairan:52800, pencairan_terafiliasi:3274, saldo_laporan:13727, saldo_rekening:13840, pendanaan_total:52800, pendanaan_5_terbesar:12408, outstanding:160500, outstanding_macet_90:6580 },
+    /* Bulan  9 */ { total_pencairan:53200, pencairan_terafiliasi:3458, saldo_laporan:13813, saldo_rekening:13960, pendanaan_total:53200, pendanaan_5_terbesar:13938, outstanding:162000, outstanding_macet_90:7128 },
+    /* Bulan 10 */ { total_pencairan:53600, pencairan_terafiliasi:3270, saldo_laporan:13905, saldo_rekening:14080, pendanaan_total:53600, pendanaan_5_terbesar:15222, outstanding:163500, outstanding_macet_90:7684 },
+    /* Bulan 11 */ { total_pencairan:54000, pencairan_terafiliasi:3402, saldo_laporan:13984, saldo_rekening:14200, pendanaan_total:54000, pendanaan_5_terbesar:16794, outstanding:165000, outstanding_macet_90:8910 },
+    /* Bulan 12 */ { total_pencairan:54400, pencairan_terafiliasi:3590, saldo_laporan:14071, saldo_rekening:14320, pendanaan_total:54400, pendanaan_5_terbesar:18605, outstanding:166500, outstanding_macet_90:10156 }
+  ]},
+  C: { nama:"Platform Contoh C", bulan:[
+    /* Bulan  1 */ { total_pencairan:64000, pencairan_terafiliasi:3904, saldo_laporan:12025, saldo_rekening:12000, pendanaan_total:64000, pendanaan_5_terbesar:10304, outstanding:178000, outstanding_macet_90:5696 },
+    /* Bulan  2 */ { total_pencairan:65000, pencairan_terafiliasi:4550, saldo_laporan:12134, saldo_rekening:12100, pendanaan_total:65000, pendanaan_5_terbesar:10985, outstanding:180000, outstanding_macet_90:6120 },
+    /* Bulan  3 */ { total_pencairan:66000, pencairan_terafiliasi:4224, saldo_laporan:12173, saldo_rekening:12150, pendanaan_total:66000, pendanaan_5_terbesar:10428, outstanding:182000, outstanding_macet_90:5642 },
+    /* Bulan  4 */ { total_pencairan:66500, pencairan_terafiliasi:5187, saldo_laporan:12238, saldo_rekening:12200, pendanaan_total:66500, pendanaan_5_terbesar:11704, outstanding:184000, outstanding_macet_90:6440 },
+    /* Bulan  5 */ { total_pencairan:67000, pencairan_terafiliasi:4824, saldo_laporan:12344, saldo_rekening:12300, pendanaan_total:67000, pendanaan_5_terbesar:11524, outstanding:186000, outstanding_macet_90:6696 },
+    /* Bulan  6 */ { total_pencairan:62000, pencairan_terafiliasi:8680, saldo_laporan:12211, saldo_rekening:12100, pendanaan_total:62000, pendanaan_5_terbesar:11718, outstanding:188000, outstanding_macet_90:7896 },
+    /* Bulan  7 */ { total_pencairan:58000, pencairan_terafiliasi:12760, saldo_laporan:11991, saldo_rekening:11800, pendanaan_total:58000, pendanaan_5_terbesar:13456, outstanding:190000, outstanding_macet_90:9120 },
+    /* Bulan  8 */ { total_pencairan:54000, pencairan_terafiliasi:16740, saldo_laporan:11825, saldo_rekening:11500, pendanaan_total:54000, pendanaan_5_terbesar:15714, outstanding:192000, outstanding_macet_90:11328 },
+    /* Bulan  9 */ { total_pencairan:50000, pencairan_terafiliasi:20000, saldo_laporan:11713, saldo_rekening:11100, pendanaan_total:50000, pendanaan_5_terbesar:17650, outstanding:194000, outstanding_macet_90:14356 },
+    /* Bulan 10 */ { total_pencairan:46000, pencairan_terafiliasi:22540, saldo_laporan:11859, saldo_rekening:10800, pendanaan_total:46000, pendanaan_5_terbesar:19504, outstanding:196000, outstanding_macet_90:18816 },
+    /* Bulan 11 */ { total_pencairan:43000, pencairan_terafiliasi:24940, saldo_laporan:12068, saldo_rekening:10400, pendanaan_total:43000, pendanaan_5_terbesar:20253, outstanding:198000, outstanding_macet_90:24354 },
+    /* Bulan 12 */ { total_pencairan:40000, pencairan_terafiliasi:26800, saldo_laporan:12450, saldo_rekening:10000, pendanaan_total:40000, pendanaan_5_terbesar:20800, outstanding:200000, outstanding_macet_90:31600 }
+  ]}
+};
+const PLATFORM = ["A", "B", "C"];
+
+// Daftar periksa legalitas. Jawaban contoh fiktif; pengguna bisa mengubahnya.
+const LEGAL_ITEMS = [
+  { id:"izin", t:"Izin penyelenggara terdaftar di OJK",
+    h:"Nama penyelenggara tercantum sebagai penyelenggara fintech lending berizin.",
+    q:{ tidak:"Nama penyelenggara tidak ditemukan sebagai penyelenggara berizin. Minta bukti izin sebelum menaruh dana.",
+        belum:"Status izin belum dicek. Cari nama penyelenggara di daftar penyelenggara fintech lending berizin di situs OJK." } },
+  { id:"auditor", t:"Auditor dan KAP tercantum",
+    h:"Nama akuntan publik dan kantor akuntan publik pada laporan auditor tercantum di daftar AP dan KAP terdaftar di OJK.",
+    q:{ tidak:"Auditor atau KAP tidak tercantum. Siapa auditor laporan keuangan terakhir dan apakah terdaftar di OJK?",
+        belum:"Auditor belum dicek. Cocokkan nama AP dan KAP dengan daftar AP dan KAP terdaftar di situs OJK." } },
+  { id:"audit", t:"Laporan audit terakhir tersedia beserta opininya",
+    h:"Tahun buku terakhir dan opini auditor tercatat, dan keaslian laporan dicek lewat kode QR.",
+    q:{ tidak:"Laporan audit terakhir beserta opininya tidak tersedia. Bisakah penyelenggara memberikan laporan keuangan tahunan yang sudah diaudit?",
+        belum:"Laporan audit belum dicek. Periksa tahun buku, opini, dan kode QR pada laporan auditor independen." } },
+  { id:"escrow", t:"Rekening penampung (escrow) disebutkan",
+    h:"Setoran pemberi dana masuk lewat virtual account ke rekening penampung di bank, bukan ke rekening pribadi.",
+    q:{ tidak:"Rekening penampung tidak disebutkan. Di bank mana rekening penampung dibuka, dan apakah setoran pernah masuk ke rekening lain?",
+        belum:"Rekening penampung belum dicek. Lihat instruksi setoran di aplikasi atau perjanjian pendanaan." } },
+  { id:"afiliasi", t:"Pihak terafiliasi diungkapkan",
+    h:"Pemegang saham pengendali dan transaksi dengan pihak berelasi diungkapkan di laporan keuangan audit.",
+    q:{ tidak:"Pihak terafiliasi tidak diungkapkan. Siapa pemegang saham pengendali dan transaksi apa saja yang terjadi dengan pihak berelasi?",
+        belum:"Pengungkapan pihak terafiliasi belum dicek. Baca catatan pihak berelasi di laporan keuangan audit." } },
+];
+const LEGAL_CONTOH = {
+  A: { izin:"ya", auditor:"ya", audit:"ya", escrow:"ya", afiliasi:"ya" },
+  B: { izin:"ya", auditor:"ya", audit:"ya", escrow:"belum", afiliasi:"belum" },
+  C: { izin:"ya", auditor:"belum", audit:"tidak", escrow:"ya", afiliasi:"belum" }
+};
+const JAWAB = { ya:"Ya", tidak:"Tidak", belum:"Belum dicek" };
+
+// Contoh CSV untuk pencocokan transaksi (rupiah penuh, referensi fiktif)
+const CONTOH_CSV_LAPORAN = [
+  "tanggal,referensi,jumlah",
+  "2026-09-01,PCR-0901,125000000",
+  "2026-09-01,PCR-0902,80000000",
+  "2026-09-02,PCR-0903,240000000",
+  "2026-09-02,PCR-0904,60000000",
+  "2026-09-03,PCR-0905,150000000",
+  "2026-09-03,PCR-0906,95000000",
+  "2026-09-04,PCR-0907,310000000"].join("\n");
+const CONTOH_CSV_BANK = [
+  "tanggal,referensi,jumlah",
+  "2026-09-01,PCR-0901,125000000",
+  "2026-09-01,PCR-0902,80000000",
+  "2026-09-02,PCR-0903,200000000",
+  "2026-09-02,PCR-0904,60000000",
+  "2026-09-03,PCR-0905,150000000",
+  "2026-09-04,TRF-0911,310000000"].join("\n");
+
+/* =====================================================================
+   RUMUS
+   Lima indikator, ambang, bobot, skor, aturan penahan, penjelasan
+   otomatis, dan pencocokan CSV. Semua ambang dan bobot adalah
+   ASUMSI RANCANGAN, BELUM DIVALIDASI.
+   ===================================================================== */
+const ID_IND = ["I1", "I2", "I3", "I4", "I5"];
+// arah "turun" = makin kecil makin baik; "naik" = makin besar makin baik
+const IND = {
+  I1:{ nama:"Rasio pencairan ke pihak terafiliasi", pendek:"Pencairan terafiliasi", arah:"turun", desimal:1,
+       rumus:"pencairan terafiliasi / total pencairan x 100", penyebut:"total pencairan",
+       tanya:"Siapa saja penerima dana yang terafiliasi dengan penyelenggara, dan apa dasar penyaluran dana kepada mereka?" },
+  I2:{ nama:"Selisih rekonsiliasi saldo", pendek:"Selisih saldo", arah:"turun", desimal:2,
+       rumus:"|saldo laporan - saldo rekening| / saldo rekening x 100", penyebut:"saldo rekening",
+       tanya:"Mengapa saldo yang dilaporkan berbeda dengan saldo rekening penampung, dan kapan selisih itu diselesaikan?" },
+  I3:{ nama:"Konsentrasi penerima dana", pendek:"Konsentrasi penerima dana", arah:"turun", desimal:1,
+       rumus:"pendanaan 5 penerima terbesar / pendanaan total x 100", penyebut:"pendanaan total",
+       tanya:"Siapa lima penerima dana terbesar, dan bagaimana penyelenggara membatasi konsentrasi pendanaan?" },
+  I4:{ nama:"Wanprestasi di atas 90 hari", pendek:"Wanprestasi 90 hari", arah:"turun", desimal:1,
+       rumus:"outstanding macet di atas 90 hari / outstanding x 100", penyebut:"outstanding",
+       tanya:"Bagaimana rencana penagihan pinjaman yang menunggak lebih dari 90 hari, dan siapa yang menanggung kerugiannya?" },
+  I5:{ nama:"Kelengkapan legalitas dan auditor", pendek:"Kelengkapan legalitas", arah:"naik", desimal:0,
+       rumus:'jumlah butir "ya" / jumlah butir x 100', penyebut:"jumlah butir",
+       tanya:"Bisakah penyelenggara menunjukkan bukti untuk butir legalitas yang belum lengkap?" },
+};
+// Setelan bawaan. g = batas hijau, r = batas merah.
+// Indikator "turun": hijau bila nilai < g, kuning bila g <= nilai <= r, merah bila nilai > r.
+// Indikator "naik" (I5): hijau bila nilai >= g, kuning bila r <= nilai < g, merah bila nilai < r.
+const CFG_DEFAULT = {
+  bobot:{ I1:20, I2:20, I3:20, I4:20, I5:20 },
+  ambang:{ I1:{ g:10, r:30 }, I2:{ g:0.5, r:2 }, I3:{ g:20, r:40 }, I4:{ g:5, r:10 }, I5:{ g:80, r:50 } },
+  lampu:{ g:75, r:45 }            // status total: hijau >= 75, kuning 45 sampai 74, merah < 45
+};
+const SKOR_LEVEL = [100, 50, 0];  // hijau, kuning, merah
+const salin = (o) => JSON.parse(JSON.stringify(o));
+// pembulatan 9 desimal agar galat pecahan biner tidak menggeser status di tepat ambang
+const bulat9 = (x) => Math.round(x * 1e9) / 1e9;
+
+// pembagian aman: penyebut nol atau data kosong menghasilkan null (tidak dapat dihitung)
+function bagi(a, b){
+  if (a == null || b == null || !isFinite(a) || !isFinite(b) || b === 0) return null;
+  return a / b;
+}
+function kelengkapan(jawab){
+  const ids = LEGAL_ITEMS.map((x) => x.id);
+  const ya = ids.filter((id) => jawab && jawab[id] === "ya").length;
+  return { ya, total:ids.length, pct: ids.length ? bulat9(ya * 100 / ids.length) : null };
+}
+function nilaiIndikator(m, jawabLegal){
+  const v = (x) => (x == null ? null : bulat9(x));
+  return {
+    I1: v(bagi(m.pencairan_terafiliasi * 100, m.total_pencairan)),
+    I2: v(bagi(Math.abs(m.saldo_laporan - m.saldo_rekening) * 100, m.saldo_rekening)),
+    I3: v(bagi(m.pendanaan_5_terbesar * 100, m.pendanaan_total)),
+    I4: v(bagi(m.outstanding_macet_90 * 100, m.outstanding)),
+    I5: kelengkapan(jawabLegal).pct
+  };
+}
+// status satu indikator: 0 hijau, 1 kuning, 2 merah. Nilai kosong dianggap kuning (perlu dicek).
+function levelOf(id, v, cfg){
+  if (v == null) return { lv:1, kosong:true };
+  const t = cfg.ambang[id];
+  if (IND[id].arah === "naik") return { lv: v >= t.g ? 0 : (v >= t.r ? 1 : 2), kosong:false };
+  return { lv: v < t.g ? 0 : (v <= t.r ? 1 : 2), kosong:false };
+}
+// bobot yang tidak berjumlah 100 dinormalkan; bobot negatif atau bukan angka dianggap 0
+function normalisasiBobot(bobot){
+  const asli = {}; let total = 0;
+  ID_IND.forEach((id) => { const w = Number(bobot && bobot[id]); asli[id] = isFinite(w) && w > 0 ? w : 0; total += asli[id]; });
+  total = bulat9(total);
+  if (total === 0) return { bobot:salin(CFG_DEFAULT.bobot), dinormalkan:true, totalAsli:0,
+    pesan:"Semua bobot nol, jadi bobot bawaan 20% masing-masing dipakai." };
+  if (Math.abs(total - 100) < 1e-9) return { bobot:asli, dinormalkan:false, totalAsli:total, pesan:"" };
+  const b = {}; ID_IND.forEach((id) => { b[id] = asli[id] * 100 / total; });
+  return { bobot:b, dinormalkan:true, totalAsli:total,
+    pesan:"Total bobot " + angka(total) + "%, bukan 100%. Bobot dinormalkan otomatis: tiap bobot dibagi " + angka(total) + " lalu dikali 100." };
+}
+// MESIN SKOR: hasil lengkap untuk satu platform pada satu bulan
+function hitungSkor(m, jawabLegal, cfg){
+  cfg = cfg || CFG_DEFAULT;
+  const nb = normalisasiBobot(cfg.bobot);
+  const v = nilaiIndikator(m, jawabLegal);
+  const ind = {}; let total = 0;
+  ID_IND.forEach((id) => {
+    const L = levelOf(id, v[id], cfg);
+    const skorInd = SKOR_LEVEL[L.lv];
+    const kontribusi = nb.bobot[id] * skorInd / 100;
+    total += kontribusi;
+    ind[id] = { nilai:v[id], lv:L.lv, kosong:L.kosong, skor:skorInd, bobot:nb.bobot[id], kontribusi };
+  });
+  total = bulat9(total);
+  const statusSkor = total >= cfg.lampu.g ? 0 : (total >= cfg.lampu.r ? 1 : 2);
+  let status = statusSkor, penahan = null;
+  // v1.2: penahan berlaku untuk kelima indikator. Penahan hanya berlaku untuk indikator yang bobotnya lebih dari nol.
+  const merahAktif = (id) => nb.bobot[id] > 0 && ind[id].lv === 2;
+  const m1 = merahAktif("I1"), m2 = merahAktif("I2"), ids = ID_IND.filter(merahAktif);
+  if (m1 && m2){ penahan = { aturan:"dua", ids, mengubah: statusSkor !== 2 }; status = 2; }
+  else if (ids.length){ penahan = { aturan:"satu", ids, id: daftarKata(ids), mengubah: statusSkor === 0 }; status = Math.max(statusSkor, 1); }
+  return { ind, total, statusSkor, status, penahan, bobotInfo:nb, cfg };
+}
+// kalimat penjelasan untuk satu indikator yang tidak hijau
+function kalimatIndikator(id, d, cfg){
+  const t = cfg.ambang[id], nm = IND[id].nama, w = "bobot " + angka(d.bobot, 1) + " persen";
+  if (d.kosong) return nm + " tidak dapat dihitung karena " + IND[id].penyebut + " bernilai nol, jadi dianggap kuning sampai datanya lengkap (" + w + ").";
+  const v = angka(d.nilai, IND[id].desimal);
+  if (IND[id].arah === "naik"){
+    if (d.lv === 2) return nm + " " + v + " persen berada di bawah ambang merah " + angka(t.r) + " persen (" + w + ").";
+    return nm + " " + v + " persen berada di zona kuning, di bawah ambang hijau " + angka(t.g) + " persen (" + w + ").";
+  }
+  if (d.lv === 2) return nm + " " + v + " persen melampaui ambang merah " + angka(t.r) + " persen (" + w + ").";
+  return nm + " " + v + " persen berada di zona kuning " + angka(t.g) + " sampai " + angka(t.r) + " persen (" + w + ").";
+}
+function penjelasan(h){
+  return ID_IND.filter((id) => h.ind[id].lv > 0).map((id) => kalimatIndikator(id, h.ind[id], h.cfg));
+}
+function daftarKata(a){ return a.length <= 2 ? a.join(" dan ") : a.slice(0, -1).join(", ") + ", dan " + a[a.length - 1]; }
+function kalimatPenahan(h){
+  if (!h.penahan) return "";
+  if (h.penahan.aturan === "dua") return "Aturan penahan aktif: I1 dan I2 sama-sama merah, sehingga status total merah" + (h.penahan.mengubah ? " walaupun skornya " + angka(h.total, 1) + "." : ".");
+  return "Aturan penahan aktif: " + h.penahan.id + " merah, sehingga status total paling baik kuning" + (h.penahan.mengubah ? " walaupun skornya " + angka(h.total, 1) + "." : ".");
+}
+// tiga alasan utama: merah dulu, lalu yang paling jauh melewati ambang, lalu bobot terbesar
+function alasanUtama(h){
+  const jarak = (id) => {
+    const d = h.ind[id], t = h.cfg.ambang[id];
+    if (d.kosong) return -1;
+    const acuan = d.lv === 2 ? t.r : t.g;
+    if (!acuan) return d.nilai;
+    return IND[id].arah === "naik" ? (acuan - d.nilai) / acuan : (d.nilai - acuan) / acuan;
+  };
+  return ID_IND.filter((id) => h.ind[id].lv > 0)
+    .sort((a, b) => (h.ind[b].lv - h.ind[a].lv) || (jarak(b) - jarak(a)) || (h.ind[b].bobot - h.ind[a].bobot))
+    .map((id) => ({ id, teks:kalimatIndikator(id, h.ind[id], h.cfg) }));
+}
+function pertanyaanUntuk(h, jawabLegal){
+  const out = [];
+  alasanUtama(h).forEach((a) => {
+    if (a.id === "I5"){
+      LEGAL_ITEMS.forEach((it) => { const j = jawabLegal && jawabLegal[it.id]; if (j && j !== "ya") out.push(it.q[j]); });
+      if (!LEGAL_ITEMS.some((it) => jawabLegal && jawabLegal[it.id] !== "ya")) out.push(IND.I5.tanya);
+    } else out.push(IND[a.id].tanya);
+  });
+  return out;
+}
+function bulanPertama(k, minStatus, jawab, cfg){
+  const i = DATA[k].bulan.findIndex((m) => hitungSkor(m, jawab, cfg).status >= minStatus);
+  return i < 0 ? null : i + 1;
+}
+
+// ---------- pencocokan transaksi CSV ----------
+const potong = (s) => { s = String(s); return s.length > 30 ? s.slice(0, 30) + "..." : s; };
+function bacaTanggal(s){
+  let y, mo, d, m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(s);
+  if (m){ y = +m[1]; mo = +m[2]; d = +m[3]; }
+  else if ((m = /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/.exec(s))){ d = +m[1]; mo = +m[2]; y = +m[3]; }
+  else return null;
+  const t = new Date(Date.UTC(y, mo - 1, d));
+  if (t.getUTCFullYear() !== y || t.getUTCMonth() !== mo - 1 || t.getUTCDate() !== d) return null;
+  return y + "-" + String(mo).padStart(2, "0") + "-" + String(d).padStart(2, "0");
+}
+// jumlah boleh "125000000", "125.000.000", "125.000.000,50", atau "Rp125.000.000"
+function bacaJumlah(s){
+  let t = String(s).replace(/rp/i, "").replace(/\s/g, "");
+  let neg = false;
+  if (t.startsWith("-")){ neg = true; t = t.slice(1); }
+  if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(t)) t = t.replace(/\./g, "").replace(",", ".");
+  else if (/^\d+,\d+$/.test(t)) t = t.replace(",", ".");
+  else if (!/^\d+(\.\d+)?$/.test(t)) return null;
+  const n = Number(t);
+  return isFinite(n) ? (neg ? -n : n) : null;
+}
+function bacaCSV(teks, sumber){
+  const hasil = { baris:[], galat:[], catatan:[] };
+  if (teks == null || !String(teks).trim()){
+    hasil.galat.push("Kotak " + sumber + " masih kosong. Tempel data CSV atau tekan Isi contoh.");
+    return hasil;
+  }
+  const lines = String(teks).replace(/\r\n?/g, "\n").split("\n");
+  let adaJudul = false; const seen = {};
+  lines.forEach((raw, i) => {
+    const no = i + 1, line = raw.trim();
+    if (!line) return;
+    const sep = line.includes(";") ? ";" : ",";
+    const kol = line.split(sep).map((x) => x.trim());
+    if (!adaJudul && hasil.baris.length === 0 && /tanggal/i.test(kol[0] || "")){ adaJudul = true; return; }
+    if (kol.length !== 3){
+      hasil.galat.push("Baris " + no + " di " + sumber + ": ada " + kol.length + " kolom, seharusnya 3 (tanggal, referensi, jumlah)." +
+        (kol.length > 3 && sep === "," ? " Jika jumlah memakai koma, pisahkan kolom dengan titik koma (;)." : ""));
+      return;
+    }
+    const tgl = bacaTanggal(kol[0]), jml = bacaJumlah(kol[2]);
+    let ok = true;
+    if (!tgl){ ok = false; hasil.galat.push("Baris " + no + " di " + sumber + ": tanggal \"" + potong(kol[0]) + "\" tidak dikenali. Pakai format 2026-09-01 atau 01/09/2026."); }
+    if (!kol[1]){ ok = false; hasil.galat.push("Baris " + no + " di " + sumber + ": referensi kosong."); }
+    if (jml == null){ ok = false; hasil.galat.push("Baris " + no + " di " + sumber + ": jumlah \"" + potong(kol[2]) + "\" bukan angka. Contoh yang benar: 125000000 atau 125.000.000."); }
+    else if (jml <= 0){ ok = false; hasil.galat.push("Baris " + no + " di " + sumber + ": jumlah harus lebih dari nol."); }
+    if (!ok) return;
+    const key = kol[1].toUpperCase();
+    if (seen[key]) hasil.catatan.push("Referensi " + potong(kol[1]) + " muncul lebih dari sekali di " + sumber + ".");
+    seen[key] = true;
+    hasil.baris.push({ no, tanggal:tgl, ref:kol[1], jumlah:jml });
+  });
+  if (!hasil.baris.length && !hasil.galat.length) hasil.galat.push("Kotak " + sumber + " hanya berisi judul kolom, belum ada baris data.");
+  return hasil;
+}
+const sen = (x) => Math.round(x * 100);
+function cocokkanTransaksi(lap, bank){
+  const sisa = bank.map((x) => Object.assign({}, x, { dipakai:false }));
+  const h = { cocok:[], beda:[], hanyaLaporan:[], hanyaBank:[] };
+  lap.forEach((x) => {
+    const key = x.ref.toUpperCase();
+    let y = sisa.find((z) => !z.dipakai && z.ref.toUpperCase() === key && sen(z.jumlah) === sen(x.jumlah));
+    if (y){ y.dipakai = true; h.cocok.push({ lap:x, bank:y }); return; }
+    y = sisa.find((z) => !z.dipakai && z.ref.toUpperCase() === key);
+    if (y){ y.dipakai = true; h.beda.push({ lap:x, bank:y }); return; }
+    h.hanyaLaporan.push(x);
+  });
+  sisa.filter((z) => !z.dipakai).forEach((z) => h.hanyaBank.push(z));
+  return h;
+}
+
+/* =====================================================================
+   TAMPILAN
+   Alat bantu, grafik SVG, navigasi, tema, lalu isi tiap layar.
+   Data masukan pengguna (CSV) selalu ditulis dengan textContent.
+   ===================================================================== */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+// format angka Indonesia: titik ribuan, koma desimal
+function fmt(x, d = 0){
+  if (x == null || !isFinite(x)) return "-";
+  let s = Math.abs(x).toFixed(d);
+  const neg = x < 0 && Number(s) !== 0;
+  let [a, b] = s.split(".");
+  a = a.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  return (neg ? "-" : "") + a + (b ? "," + b : "");
+}
+// seperti fmt, tetapi nol di belakang koma dibuang (untuk kalimat)
+function angka(x, d = 2){
+  let s = fmt(x, d);
+  if (s.includes(",")) s = s.replace(/0+$/, "").replace(/,$/, "");
+  return s;
+}
+const pct = (x, d = 2) => (x == null ? "-" : fmt(x, d) + "%");
+const sgn = (x, d = 0) => (x > 0 ? "+" : "") + fmt(x, d);
+const rupiah = (x) => "Rp" + fmt(x);
+const nilaiTeks = (id, v) => (v == null ? "tidak dapat dihitung" : fmt(v, IND[id].desimal) + "%");
+const LAMP = [{ w:"Hijau", t:"aman" }, { w:"Kuning", t:"waspada" }, { w:"Merah", t:"periksa" }];
+const statusText = (l) => LAMP[l].w + ": " + LAMP[l].t;
+function ikon(l){
+  if (l === 0) return '<svg class="ico" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="9" fill="currentColor"/><path d="M5.8 10.4l2.8 2.8 5.6-6" fill="none" stroke="var(--surface)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  if (l === 1) return '<svg class="ico" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 1.6L19 18H1z" fill="currentColor" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M10 7.2v5" stroke="var(--surface)" stroke-width="2.2" stroke-linecap="round"/><circle cx="10" cy="15.2" r="1.25" fill="var(--surface)"/></svg>';
+  if (l === 2) return '<svg class="ico" viewBox="0 0 20 20" aria-hidden="true"><rect x="1.5" y="1.5" width="17" height="17" rx="3" fill="currentColor"/><path d="M6.6 6.6l6.8 6.8M13.4 6.6l-6.8 6.8" stroke="var(--surface)" stroke-width="2.2" stroke-linecap="round"/></svg>';
+  return '<svg class="ico" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="3 2.5"/></svg>';
+}
+const chip = (l, extra) => '<span class="chip s' + l + '">' + ikon(l) + statusText(l) + (extra ? ' <span style="font-weight:500;opacity:.85">' + esc(extra) + "</span>" : "") + "</span>";
+const chipInd = (d) => chip(d.lv, d.kosong ? "(data kurang)" : "");
+// membuat elemen dengan teks aman (textContent)
+function el(tag, attrs, kids){
+  const e = document.createElement(tag);
+  if (attrs) Object.keys(attrs).forEach((k) => { if (k === "class") e.className = attrs[k]; else e.setAttribute(k, attrs[k]); });
+  (kids || []).forEach((c) => { if (c == null) return; e.appendChild(typeof c === "string" || typeof c === "number" ? document.createTextNode(String(c)) : c); });
+  return e;
+}
+function chipEl(l, teks){
+  const s = el("span", { class:"chip s" + l });
+  s.innerHTML = ikon(l);                  // ikon adalah SVG tetap dari kode, bukan masukan pengguna
+  s.appendChild(document.createTextNode(teks));
+  return s;
+}
+$$("[data-chip]").forEach((e) => { e.outerHTML = chip(+e.dataset.chip); });
+let toastT = null;
+function toast(t){ const e = $("#toast"); e.textContent = t; clearTimeout(toastT); if (t) toastT = setTimeout(() => { e.textContent = ""; }, 6000); }
+
+// ---------- status bersama antarlayar ----------
+const STATE = { legal: salin(LEGAL_CONTOH) };
+const legalDiubah = () => JSON.stringify(STATE.legal) !== JSON.stringify(LEGAL_CONTOH);
+const catatanLegal = () => (legalDiubah() ? "Jawaban daftar periksa legalitas sudah diubah di layar Legalitas, jadi indikator I5 dan skor di sini ikut berubah. Tabel Lampiran dan Uji Hitung tetap memakai jawaban contoh." : "");
+
+// ---------- pemilih platform dan bulan ----------
+function segPlatform(host, name, val, onChange){
+  host.innerHTML = PLATFORM.map((k) => '<label><input type="radio" name="' + name + '" value="' + k + '"' + (k === val ? " checked" : "") + '><span><span class="pf">Platform </span>Contoh ' + k + "</span></label>").join("");
+  host.addEventListener("change", (e) => { if (e.target.name === name) onChange(e.target.value); });
+  return { set(k){ const r = host.querySelector('input[value="' + k + '"]'); if (r) r.checked = true; } };
+}
+function pilihBulan(host, idSel, val, onChange){
+  let opsi = ""; for (let i = 1; i <= 12; i++) opsi += '<option value="' + i + '"' + (i === val ? " selected" : "") + ">Bulan " + i + "</option>";
+  host.innerHTML = '<span class="bulan"><button class="tbtn" type="button" data-arah="-1" aria-label="Bulan sebelumnya">&lsaquo;</button>' +
+    '<label class="sr" for="' + idSel + '">Pilih bulan</label><select id="' + idSel + '">' + opsi + '</select>' +
+    '<button class="tbtn" type="button" data-arah="1" aria-label="Bulan berikutnya">&rsaquo;</button></span>';
+  const sel = host.querySelector("select");
+  sel.addEventListener("change", () => onChange(+sel.value));
+  host.querySelectorAll("[data-arah]").forEach((b) => b.addEventListener("click", () => {
+    const v = Math.min(12, Math.max(1, +sel.value + +b.dataset.arah));
+    if (v !== +sel.value){ sel.value = String(v); onChange(v); }
+  }));
+  return { set(v){ sel.value = String(v); } };
+}
+
+// ---------- grafik garis SVG buatan sendiri ----------
+const GRAFIK = [];
+function buatGrafik(host, tipEl){ const g = { host, tipEl, opsi:null, lebar:0, fokusI:null }; GRAFIK.push(g); return g; }
+function niceStep(span){ const raw = span / 5, p = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / p; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * p; }
+function bentukSVG(bentuk, cx, cy, isi, r){
+  r = r || 4.5;
+  const ring = ' stroke="var(--surface)" stroke-width="2"';
+  if (bentuk === "kotak") return '<rect x="' + (cx - r) + '" y="' + (cy - r) + '" width="' + 2 * r + '" height="' + 2 * r + '" rx="1.5" fill="' + isi + '"' + ring + "/>";
+  if (bentuk === "segitiga") return '<path d="M' + cx + " " + (cy - r - 1.2) + " L" + (cx + r + 1) + " " + (cy + r) + " L" + (cx - r - 1) + " " + (cy + r) + 'Z" fill="' + isi + '"' + ring + ' stroke-linejoin="round"/>';
+  if (bentuk === "belah") return '<path d="M' + cx + " " + (cy - r - 1) + " L" + (cx + r + 1) + " " + cy + " L" + cx + " " + (cy + r + 1) + " L" + (cx - r - 1) + " " + cy + 'Z" fill="' + isi + '"' + ring + "/>";
+  return '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="' + isi + '"' + ring + "/>";
+}
+const BENTUK_STATUS = ["lingkaran", "segitiga", "kotak"];
+const WARNA_STATUS = ["var(--ok)", "var(--warn)", "var(--bad)"];
+// opsi: seri[{nama,pendek,nilai[],warna,bentuk}], label[], yMin, yMax, langkah, tambahY[], pita[{dari,ke,isi}],
+//       acuan[{v,teks}], fmtY, aria, tip(i), ariaTitik(i), pilih(i), terpilih, statusTitik(i), labelAkhir
+function gambarGrafik(g){
+  const o = g.opsi, host = g.host;
+  if (!o) return;
+  const lebar = Math.round(host.clientWidth);
+  if (!lebar) return;                              // layar belum tampil; digambar saat tampil
+  g.lebar = lebar;
+  const n = o.label.length, multi = o.seri.length > 1;
+  const W = Math.max(280, lebar), H = W < 520 ? 230 : 270;
+  const M = { l: W < 520 ? 44 : 54, r: multi ? (W < 520 ? 70 : 96) : (o.labelAkhir ? 18 : 14), t:16, b:30 };
+  const semua = o.seri.flatMap((s) => s.nilai).filter((v) => v != null && isFinite(v)).concat(o.tambahY || []);
+  let lo = o.yMin != null ? o.yMin : Math.min.apply(null, semua);
+  let hi = o.yMax != null ? o.yMax : Math.max.apply(null, semua);
+  if (!isFinite(lo) || !isFinite(hi)){ lo = 0; hi = 1; }
+  if (hi === lo){ hi += 1; lo -= 1; }
+  const st = o.langkah || niceStep(hi - lo);
+  if (o.yMin == null) lo = Math.floor(lo / st) * st;
+  if (o.yMax == null) hi = Math.ceil(hi / st) * st;
+  const pw = W - M.l - M.r, ph = H - M.t - M.b, dx = pw / (n - 1);
+  const x = (i) => M.l + dx * i;
+  const y = (v) => M.t + ph * (1 - (v - lo) / (hi - lo));
+  const rapat = dx < 30;
+  const fy = o.fmtY || ((v) => fmt(v, Number.isInteger(st) ? 0 : 1));
+  let s = '<svg viewBox="0 0 ' + W + " " + H + '" width="' + W + '" height="' + H + '" role="group" aria-label="' + esc(o.aria) + '">';
+  (o.pita || []).forEach((p) => {
+    const a = Math.max(lo, p.dari), b = Math.min(hi, p.ke);
+    if (b > a) s += '<rect x="' + M.l + '" y="' + y(b) + '" width="' + pw + '" height="' + (y(a) - y(b)) + '" fill="' + p.isi + '"' + (p.opasitas ? ' opacity="' + p.opasitas + '"' : "") + "/>";
+  });
+  s += '<g class="ax">';
+  for (let j = 0, v = lo; v <= hi + 1e-9; j++, v = lo + j * st){
+    const yy = y(v);
+    s += '<line x1="' + M.l + '" x2="' + (W - M.r) + '" y1="' + yy + '" y2="' + yy + '" stroke="var(--grid)" stroke-width="1"/><text x="' + (M.l - 8) + '" y="' + (yy + 4) + '" text-anchor="end">' + fy(v) + "</text>";
+  }
+  for (let i = 0; i < n; i++) if (!rapat || i % 2 === 1) s += '<text x="' + x(i) + '" y="' + (H - 8) + '" text-anchor="middle">' + o.label[i] + "</text>";
+  s += "</g>";
+  (o.acuan || []).forEach((a) => {
+    if (a.v < lo || a.v > hi) return;
+    s += '<line x1="' + M.l + '" x2="' + (W - M.r) + '" y1="' + y(a.v) + '" y2="' + y(a.v) + '" stroke="var(--fg-3)" stroke-width="1" stroke-dasharray="4 4"/>';
+    if (a.teks) s += '<text x="' + (M.l + 14) + '" y="' + (a.posisi === "atas" ? y(a.v) - 5 : y(a.v) + 14) + '" style="font:11px var(--f-ui);fill:var(--fg-2)">' + esc(a.teks) + "</text>";
+  });
+  if (o.terpilih != null) s += '<rect x="' + (x(o.terpilih) - Math.min(14, dx / 2)) + '" y="' + M.t + '" width="' + Math.min(28, dx) + '" height="' + ph + '" fill="var(--accent-soft)" opacity=".7" rx="4"/>';
+  s += '<line class="xh" x1="0" x2="0" y1="' + M.t + '" y2="' + (H - M.b) + '" stroke="var(--fg-3)" stroke-width="1" visibility="hidden"/>';
+  o.seri.forEach((sr) => {
+    let d = "", pen = false;
+    sr.nilai.forEach((v, i) => { if (v == null){ pen = false; return; } d += (pen ? " L" : " M") + x(i) + " " + y(v); pen = true; });
+    s += '<path d="' + d.trim() + '" fill="none" stroke="' + sr.warna + '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"' + (sr.putus ? ' stroke-dasharray="6 4"' : "") + "/>";
+  });
+  o.seri.forEach((sr) => {
+    sr.nilai.forEach((v, i) => {
+      if (v == null) return;
+      const lv = o.statusTitik ? o.statusTitik(i) : null;
+      const besar = o.terpilih === i ? 6 : 4.5;
+      s += lv != null ? bentukSVG(BENTUK_STATUS[lv], x(i), y(v), WARNA_STATUS[lv], besar) : bentukSVG(sr.bentuk, x(i), y(v), sr.warna, besar);
+    });
+  });
+  if (multi){
+    // label langsung di ujung garis; posisi digeser agar tidak bertumpuk
+    const ujung = o.seri.map((sr, k) => { let i = sr.nilai.length - 1; while (i >= 0 && sr.nilai[i] == null) i--; return { k, i, v: sr.nilai[i], yy: i >= 0 ? y(sr.nilai[i]) : 0 }; }).filter((u) => u.i >= 0);
+    ujung.sort((a, b) => a.yy - b.yy);
+    for (let j = 1; j < ujung.length; j++) if (ujung[j].yy - ujung[j - 1].yy < 15) ujung[j].yy = ujung[j - 1].yy + 15;
+    ujung.forEach((u) => { s += '<text x="' + (x(u.i) + 10) + '" y="' + (u.yy + 4) + '" style="font:600 12px var(--f-ui);fill:var(--fg)">' + esc(o.seri[u.k].pendek) + " " + fy(u.v) + "</text>"; });
+  } else if (o.labelAkhir){
+    const v = o.seri[0].nilai[n - 1], v0 = o.seri[0].nilai[n - 2];
+    const naikUjung = v0 == null || v >= v0;
+    let yl = y(v) + (naikUjung ? -12 : 22);
+    if (yl < M.t + 4) yl = y(v) + 22; if (yl > H - M.b - 2) yl = y(v) - 12;
+    if (v != null) s += '<text x="' + (x(n - 1) - 10) + '" y="' + yl + '" text-anchor="end" style="font:600 12px var(--f-ui);fill:var(--fg)">' + esc(o.labelAkhir(v)) + "</text>";
+  }
+  for (let i = 0; i < n; i++){
+    s += '<rect class="hit' + (o.pilih ? " pick" : "") + '" data-i="' + i + '" tabindex="0" role="' + (o.pilih ? "button" : "img") + '" aria-label="' + esc(o.ariaTitik(i)) + '" x="' + (x(i) - dx / 2) + '" y="' + M.t + '" width="' + dx + '" height="' + ph + '" fill="transparent"/>';
+  }
+  s += "</svg>";
+  host.innerHTML = s;
+  const svg = host.querySelector("svg"), tip = g.tipEl, xh = svg.querySelector(".xh");
+  const showTip = (i) => {
+    const box = svg.getBoundingClientRect(), wadah = tip.parentElement.getBoundingClientRect();   // kartu .chart (position: relative)
+    const k = box.width / W;
+    tip.innerHTML = o.tip(i);                     // isi tooltip disusun dari angka dan nama tetap di kode
+    tip.hidden = false;
+    let yv = null; o.seri.forEach((sr) => { if (sr.nilai[i] != null) yv = yv == null ? sr.nilai[i] : Math.max(yv, sr.nilai[i]); });
+    const px = box.left - wadah.left + x(i) * k, py = box.top - wadah.top + (yv == null ? M.t : y(yv)) * k;
+    const tw = tip.offsetWidth; let left = px + 14; if (left + tw > wadah.width - 8) left = px - tw - 14;
+    tip.style.left = Math.max(8, left) + "px"; tip.style.top = Math.max(8, py - 24) + "px";
+    xh.setAttribute("x1", x(i)); xh.setAttribute("x2", x(i)); xh.setAttribute("visibility", "visible");
+  };
+  const hideTip = () => { tip.hidden = true; xh.setAttribute("visibility", "hidden"); };
+  svg.addEventListener("mousemove", (e) => {
+    const box = svg.getBoundingClientRect(), vx = (e.clientX - box.left) * W / box.width;
+    if (vx < M.l - dx / 2 || vx > W - M.r + dx / 2){ hideTip(); return; }
+    showTip(Math.max(0, Math.min(n - 1, Math.round((vx - M.l) / dx))));
+  });
+  svg.addEventListener("mouseleave", hideTip);
+  svg.querySelectorAll(".hit").forEach((r) => {
+    const i = +r.dataset.i;
+    r.addEventListener("focus", () => showTip(i));
+    r.addEventListener("blur", hideTip);
+    if (o.pilih){
+      r.addEventListener("click", () => { g.fokusI = null; o.pilih(i); });
+      r.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); g.fokusI = i; o.pilih(i); } });
+    }
+  });
+  if (g.fokusI != null){ const f = svg.querySelector('.hit[data-i="' + g.fokusI + '"]'); g.fokusI = null; if (f) f.focus(); }
+}
+let tundaResize = null;
+window.addEventListener("resize", () => {
+  GRAFIK.forEach((g) => { if (g.tipEl) g.tipEl.hidden = true; });
+  clearTimeout(tundaResize);
+  tundaResize = setTimeout(() => { GRAFIK.forEach((g) => { if (g.host.offsetParent && Math.round(g.host.clientWidth) !== g.lebar) gambarGrafik(g); }); }, 120);
+});
+const labelBulan = Array.from({ length:12 }, (_, i) => "B" + (i + 1));
+
+// ---------- navigasi ----------
+const VIEWS = [
+  { id:"beranda", t:"Beranda" }, { id:"legalitas", t:"Legalitas" }, { id:"rekonsiliasi", t:"Rekonsiliasi" },
+  { id:"tanda-bahaya", t:"Tanda Bahaya" }, { id:"sensitivitas", t:"Uji Sensitivitas" }, { id:"pemberi-dana", t:"Dasbor Pemberi Dana" },
+  { id:"regulator", t:"Dasbor Regulator" }, { id:"demo", t:"Demo" }, { id:"tentang", t:"Tentang" }, { id:"uji-hitung", t:"Uji Hitung" }
+];
+const RENDER = {};                 // fungsi gambar ulang tiap layar, dipanggil saat layar dibuka
+let viewAktif = null;
+$("#tabs").innerHTML = VIEWS.map((v) => '<button class="tab" type="button" data-go="' + v.id + '">' + v.t + "</button>").join("");
+function show(id, push){
+  if (!VIEWS.some((v) => v.id === id)) id = "beranda";
+  viewAktif = id;
+  $$("[data-view]").forEach((s) => { s.hidden = s.dataset.view !== id; });
+  $$(".tab").forEach((b) => { if (b.dataset.go === id) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
+  if (RENDER[id]) RENDER[id]();
+  if (push){
+    try { history.replaceState(null, "", "#" + id); } catch (e) {}
+    window.scrollTo({ top:0 });
+  }
+  // geser bilah tab (di HP) agar tab aktif terlihat, tanpa memindahkan fokus keyboard
+  const act = $('.tab[aria-current="page"]'), bar = $("#tabs");
+  if (act && bar.scrollWidth > bar.clientWidth) bar.scrollLeft = act.offsetLeft - bar.clientWidth / 2 + act.offsetWidth / 2;
+}
+document.addEventListener("click", (e) => {
+  const g = e.target.closest("[data-go]");
+  if (g){ e.preventDefault(); if (tour.aktif()) tour.tutup(); show(g.dataset.go, true); return; }
+  const d = e.target.closest("[data-demo]");
+  if (d) tour.mulai(d);
+});
+window.addEventListener("hashchange", () => {
+  const id = location.hash.slice(1);
+  if (VIEWS.some((v) => v.id === id) && id !== viewAktif) show(id, false);   // #main dari tautan "Lewati ke isi" diabaikan
+});
+
+// ---------- tema: pilihan disimpan di localStorage bila tersedia ----------
+const themeBtn = $("#themeBtn"), MODES = ["auto", "light", "dark"];
+let mode = "auto";
+const THEME_T = { auto:"Otomatis", light:"Terang", dark:"Gelap" };
+const THEME_ICO = {
+  auto:'<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 2a6 6 0 0 1 0 12z" fill="currentColor"/></svg>',
+  light:'<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.4 1.4M11.6 11.6L13 13M3 13l1.4-1.4M11.6 4.4L13 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+  dark:'<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5 5.8 5.8 0 1 0 13.5 9.6z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>' };
+function setTheme(m, save){
+  mode = m; const r = document.documentElement;
+  if (m === "auto") r.removeAttribute("data-theme"); else r.setAttribute("data-theme", m);
+  themeBtn.innerHTML = THEME_ICO[m] + '<span class="lbl-t">' + THEME_T[m] + "</span>";
+  themeBtn.setAttribute("aria-label", "Tema: " + THEME_T[m] + ". Tekan untuk mengganti.");
+  themeBtn.title = "Tema: " + THEME_T[m];
+  if (save){ try { localStorage.setItem("telusurdana.tema", m); } catch (e) {} }
+  // grafik memakai token warna CSS, jadi tidak perlu digambar ulang
+}
+themeBtn.addEventListener("click", () => setTheme(MODES[(MODES.indexOf(mode) + 1) % 3], true));
+let temaSimpan = "auto";
+try { temaSimpan = localStorage.getItem("telusurdana.tema") || "auto"; } catch (e) {}
+setTheme(MODES.includes(temaSimpan) ? temaSimpan : "auto", false);
+$("#ver").textContent = "TelusurDana versi " + VERSI + ", dibuat " + TANGGAL + ". Prototipe konsep, bukan produk jadi.";
+
+/* ---------- 1. BERANDA ---------- */
+RENDER.beranda = function(){
+  let h = "<span></span>";
+  for (let i = 1; i <= 12; i++) h += '<span class="hd">B' + i + "</span>";
+  const cap = []; let cKuning = null;
+  PLATFORM.forEach((k) => {
+    const p = DATA[k];
+    h += '<span class="lbl"><span class="long">Platform Contoh </span>' + k + "</span>";
+    let fk = null, fm = null;
+    p.bulan.forEach((m, i) => {
+      const s = hitungSkor(m, STATE.legal[k]);
+      if (s.status >= 1 && fk === null) fk = i + 1;
+      if (s.status === 2 && fm === null) fm = i + 1;
+      const lab = p.nama + " bulan " + (i + 1) + ": " + statusText(s.status) + ", skor " + angka(s.total, 1);
+      h += '<span class="cell s' + s.status + '" role="img" aria-label="' + esc(lab) + '" title="' + esc(lab) + '">' + ikon(s.status) + "</span>";
+    });
+    if (k === "C") cKuning = fk;
+    cap.push("<span><strong>" + p.nama + "</strong>: " + (fk === null ? "hijau sepanjang tahun" : "kuning sejak Bulan " + fk + (fm ? ", merah sejak Bulan " + fm : "")) + "</span>");
+  });
+  h += '<span class="lbl" style="color:var(--fg-3);font-weight:500"><span class="long">Audit tahunan</span></span><span class="audit-row"><span><span class="short">Audit tahunan</span><span class="long">Bulan 1 sampai 12 diperiksa sekaligus</span></span><b><span class="long">opini terbit </span>setelah tutup buku &rarr;</b></span>';
+  $("#peta").innerHTML = h;
+  $("#petaCap").innerHTML = cap.join("") + '<span class="note" style="flex-basis:100%">Lampu dihitung dari lima indikator dengan setelan bawaan. ' + esc(catatanLegal()) + "</span>";
+  const rows = [
+    ["Frekuensi", "Sekali untuk setiap tahun buku, setelah tahun buku ditutup", "Berkelanjutan. Rancangan harian; prototipe ini bulanan"],
+    ["Cakupan data", "Laporan keuangan dan bukti dari entitas; sebagian pos diuji dengan sampel", "Seluruh mutasi rekening penampung dan laporan penyelenggara, diolah sebagai angka agregat"],
+    ["Kecepatan deteksi", "Setelah periode berakhir dan audit selesai", "Pada periode terjadinya selisih; pada simulasi, Platform Contoh C sudah kuning di bulan ke-" + cKuning],
+    ["Pengguna", "Pemegang saham, regulator, publik", "Pemberi dana dan pengawas"],
+  ];
+  $("#cmpBody").innerHTML = rows.map((r) => '<tr><th scope="row">' + r[0] + '</th><td data-l="Audit tahunan">' + r[1] + '</td><td data-l="TelusurDana">' + r[2] + "</td></tr>").join("");
+};
+
+/* ---------- 2. LEGALITAS ---------- */
+(function legalitas(){
+  let plat = "A";
+  const t5 = CFG_DEFAULT.ambang.I5;
+  $("#legMeter").style.gridTemplateColumns = t5.r + "fr " + (t5.g - t5.r) + "fr " + (100 - t5.g) + "fr";
+  $("#legMeter").innerHTML = '<i class="m2"></i><i class="m1"></i><i class="m0"></i>';
+  $("#legSkala").innerHTML = '<span style="left:0">0</span><span style="left:' + t5.r + '%">' + t5.r + '</span><span style="left:' + t5.g + '%">' + t5.g + '</span><span style="left:100%">100</span>';
+  $("#legAmbang").textContent = "Hijau " + t5.g + "% ke atas, kuning " + t5.r + " sampai " + (t5.g - 1) + "%, merah di bawah " + t5.r + "%.";
+  const icoOf = (v) => (v === "ya" ? 0 : v === "tidak" ? 2 : 3);
+  const warnaOf = (v) => (v === "ya" ? "var(--ok)" : v === "tidak" ? "var(--bad)" : "var(--fg-3)");
+  function renderList(){
+    const j = STATE.legal[plat];
+    $("#legList").innerHTML = LEGAL_ITEMS.map((it, i) => {
+      const nm = "leg-" + it.id;
+      return '<div class="litem"><span class="st-ico" data-st="' + it.id + '" style="color:' + warnaOf(j[it.id]) + '">' + ikon(icoOf(j[it.id])) + "</span>" +
+        "<fieldset><legend>" + (i + 1) + ". " + esc(it.t) + '</legend><span class="item-h">' + esc(it.h) + "</span>" +
+        '<div class="seg small" role="radiogroup" aria-label="Jawaban untuk ' + esc(it.t) + '">' +
+        ["ya", "tidak", "belum"].map((v) => '<label><input type="radio" name="' + nm + '" value="' + v + '"' + (j[it.id] === v ? " checked" : "") + "><span>" + JAWAB[v] + "</span></label>").join("") +
+        "</div></fieldset></div>";
+    }).join("");
+  }
+  function renderSum(){
+    const j = STATE.legal[plat], k = kelengkapan(j), lv = levelOf("I5", k.pct, CFG_DEFAULT).lv;
+    $("#legPct").textContent = fmt(k.pct, 0) + "%";
+    $("#legFrac").textContent = k.ya + " dari " + k.total + ' butir dijawab "ya"';
+    $("#legPin").style.left = k.pct + "%";
+    $("#legChip").innerHTML = chip(lv);
+    const qs = LEGAL_ITEMS.filter((it) => j[it.id] !== "ya").map((it) => "<li>" + esc(it.q[j[it.id]]) + "</li>");
+    $("#legNotes").innerHTML = qs.length ? "<ul>" + qs.join("") + "</ul>" : '<p class="note">Semua butir dijawab "ya". Tetap simpan bukti pengecekan manualnya.</p>';
+    LEGAL_ITEMS.forEach((it) => {
+      const e = $('[data-st="' + it.id + '"]'); if (!e) return;
+      e.innerHTML = ikon(icoOf(j[it.id])); e.style.color = warnaOf(j[it.id]);
+    });
+  }
+  const seg = segPlatform($("#legPlat"), "legPlat", plat, (k) => { plat = k; renderList(); renderSum(); });
+  $("#legList").addEventListener("change", (e) => {
+    const m = e.target.name && e.target.name.match(/^leg-(\w+)$/); if (!m) return;
+    STATE.legal[plat][m[1]] = e.target.value; renderSum();
+  });
+  $("#legReset").addEventListener("click", () => { STATE.legal[plat] = salin(LEGAL_CONTOH[plat]); renderList(); renderSum(); toast("Jawaban " + DATA[plat].nama + " dikembalikan ke contoh."); });
+  RENDER.legalitas = () => { seg.set(plat); renderList(); renderSum(); };
+})();
+
+/* ---------- 3. REKONSILIASI ---------- */
+const rek = (function(){
+  let plat = "C";
+  const g = buatGrafik($("#rekSvg"), $("#rekTip"));
+  const t2 = CFG_DEFAULT.ambang.I2;
+  $("#rekAmbang").textContent = "Hijau bila selisih di bawah " + angka(t2.g) + "%, kuning " + angka(t2.g) + " sampai " + angka(t2.r) + "%, merah di atas " + angka(t2.r) + "%. Baris kuning dan merah ditandai sebagai tidak cocok. Nilai ini menjadi indikator I2.";
+  function baris(m){
+    const sel = m.saldo_laporan - m.saldo_rekening;
+    const v = nilaiIndikator(m, null).I2, s = bagi(sel * 100, m.saldo_rekening);
+    return { lap:m.saldo_laporan, bank:m.saldo_rekening, sel, abs:v, sgn: s == null ? null : bulat9(s), lv: levelOf("I2", v, CFG_DEFAULT) };
+  }
+  function render(){
+    const p = DATA[plat], rows = p.bulan.map(baris);
+    const tdk = rows.filter((r) => r.lv.lv > 0).length, first = rows.findIndex((r) => r.lv.lv > 0);
+    const maxI = rows.reduce((a, r, i) => ((r.abs || 0) > (rows[a].abs || 0) ? i : a), 0);
+    $("#rekStats").innerHTML =
+      '<div class="card stat"><span class="lab">Bulan tidak cocok</span><span class="val">' + tdk + ' dari 12</span><span class="sub">' + (first < 0 ? "Semua bulan di zona hijau" : "Mulai Bulan " + (first + 1)) + "</span></div>" +
+      '<div class="card stat"><span class="lab">Selisih terbesar</span><span class="val">' + pct(rows[maxI].abs) + '</span><span class="sub">Bulan ' + (maxI + 1) + ", " + sgn(rows[maxI].sel) + " juta</span></div>" +
+      '<div class="card stat"><span class="lab">Selisih Bulan 12</span><span class="val">' + sgn(rows[11].sel) + ' jt</span><span class="sub">Laporan Rp' + fmt(rows[11].lap) + " jt, rekening Rp" + fmt(rows[11].bank) + " jt</span></div>";
+    $("#rekCap").textContent = "Saldo laporan dan saldo rekening " + p.nama + " (Rp juta)";
+    $("#rekTable tbody").innerHTML = rows.map((r, i) => '<tr class="' + (r.lv.lv ? "lv" + r.lv.lv : "") + '"><th scope="row">B' + (i + 1) + '</th><td class="r num">' + fmt(r.lap) + '</td><td class="r num">' + fmt(r.bank) + '</td><td class="r num">' + sgn(r.sel) + '</td><td class="r num">' + pct(r.abs) + "</td><td>" + chip(r.lv.lv, r.lv.kosong ? "(data kurang)" : "") + "</td></tr>").join("");
+    g.opsi = {
+      seri:[{ nama:"Selisih saldo", pendek:"Selisih", nilai:rows.map((r) => r.sgn), warna:"var(--accent)", bentuk:"lingkaran" }],
+      label:labelBulan, tambahY:[-t2.r - 0.5, t2.r + 0.5],
+      pita:[{ dari:-t2.g, ke:t2.g, isi:"var(--surface-2)" }],
+      acuan:[{ v:t2.r, teks:"+" + angka(t2.r) + "% batas merah", posisi:"atas" }, { v:-t2.r, teks:"-" + angka(t2.r) + "% batas merah", posisi:"bawah" }],
+      fmtY:(v) => fmt(v, Math.abs(v) < 5 && !Number.isInteger(v) ? 1 : 0) + "%", statusTitik:(i) => rows[i].lv.lv,
+      aria:"Grafik selisih saldo " + p.nama + " selama 12 bulan; angka lengkap ada di tabel",
+      ariaTitik:(i) => "Bulan " + (i + 1) + ": selisih " + sgn(rows[i].sel) + " juta rupiah, " + pct(rows[i].abs) + ", " + statusText(rows[i].lv.lv),
+      tip:(i) => "<b>Bulan " + (i + 1) + "</b><br>Laporan Rp" + fmt(rows[i].lap) + " juta<br>Rekening Rp" + fmt(rows[i].bank) + " juta<br>Selisih " + sgn(rows[i].sel) + " juta (" + pct(rows[i].abs) + ")<br>" + statusText(rows[i].lv.lv),
+      labelAkhir:(v) => (v > 0 ? "+" : "") + fmt(v, 2) + "%"
+    };
+    gambarGrafik(g);
+  }
+  const seg = segPlatform($("#rekPlat"), "rekPlat", plat, (k) => { plat = k; render(); });
+  RENDER.rekonsiliasi = render;
+
+  // --- pencocokan CSV ---
+  function tampilCocok(host, h){
+    host.textContent = "";
+    const ring = el("div", { class:"ringkas-csv" }, [
+      chipEl(0, "Cocok: " + h.cocok.length), chipEl(1, "Jumlah berbeda: " + h.beda.length),
+      chipEl(2, "Hanya di laporan: " + h.hanyaLaporan.length), chipEl(2, "Hanya di rekening: " + h.hanyaBank.length)]);
+    host.appendChild(ring);
+    const tidak = h.beda.length + h.hanyaLaporan.length + h.hanyaBank.length;
+    if (!tidak){ host.appendChild(el("p", { class:"note", style:"margin-top:10px" }, ["Semua transaksi cocok berdasarkan referensi dan jumlah."])); return; }
+    const tb = el("tbody");
+    const tambah = (jenis, lv, tgl, ref, a, b, ket) => {
+      const tr = el("tr", { class:"lv" + lv }, [el("th", { scope:"row" }, [jenis]), el("td", { class:"num" }, [tgl]), el("td", null, [ref]),
+        el("td", { class:"r num" }, [a == null ? "-" : rupiah(a)]), el("td", { class:"r num" }, [b == null ? "-" : rupiah(b)]), el("td", null, [ket])]);
+      tb.appendChild(tr);
+    };
+    h.beda.forEach((p) => tambah("Jumlah berbeda", 1, p.lap.tanggal, p.lap.ref, p.lap.jumlah, p.bank.jumlah, "Selisih " + rupiah(Math.abs(p.lap.jumlah - p.bank.jumlah))));
+    h.hanyaLaporan.forEach((x) => tambah("Hanya di laporan", 2, x.tanggal, x.ref, x.jumlah, null, "Tidak ada mutasi bank dengan referensi ini"));
+    h.hanyaBank.forEach((x) => tambah("Hanya di rekening", 2, x.tanggal, x.ref, null, x.jumlah, "Dana bergerak tanpa catatan di laporan"));
+    const tabel = el("table", null, [el("thead", null, [el("tr", null, ["Jenis", "Tanggal", "Referensi", "Jumlah laporan", "Jumlah rekening", "Keterangan"].map((t, i) => el("th", { scope:"col", class: i === 3 || i === 4 ? "r" : "" }, [t])))]), tb]);
+    const kartu = el("div", { class:"tbl-card", style:"margin-top:12px" }, [el("div", { class:"tbl-h" }, [el("h3", null, ["Transaksi yang tidak cocok (" + tidak + ")"])]), el("div", { class:"tbl-scroll" }, [tabel])]);
+    host.appendChild(kartu);
+  }
+  function tampilGalat(host, list, catatan){
+    host.textContent = "";
+    if (!list.length && !catatan.length) return;
+    if (list.length){
+      host.appendChild(el("b", null, ["Data belum bisa dicocokkan. Periksa baris berikut:"]));
+      host.appendChild(el("ul", null, list.slice(0, 6).map((t) => el("li", null, [t])).concat(list.length > 6 ? [el("li", null, ["dan " + (list.length - 6) + " galat lain."])] : [])));
+    }
+    if (catatan.length) host.appendChild(el("p", { class:"note" }, ["Catatan: " + catatan.slice(0, 3).join(" ")]));
+  }
+  function jalankanCocok(){
+    const a = bacaCSV($("#csvA").value, "laporan penyelenggara"), b = bacaCSV($("#csvB").value, "mutasi rekening");
+    const galat = a.galat.concat(b.galat), cat = a.catatan.concat(b.catatan);
+    tampilGalat($("#csvGalat"), galat, galat.length ? [] : cat);
+    if (galat.length){ $("#csvHasil").textContent = ""; return null; }
+    const h = cocokkanTransaksi(a.baris, b.baris);
+    tampilCocok($("#csvHasil"), h);
+    return h;
+  }
+  $("#csvContoh").addEventListener("click", () => { $("#csvA").value = CONTOH_CSV_LAPORAN; $("#csvB").value = CONTOH_CSV_BANK; jalankanCocok(); });
+  $("#csvCocok").addEventListener("click", jalankanCocok);
+  $("#csvHapus").addEventListener("click", () => { $("#csvA").value = ""; $("#csvB").value = ""; $("#csvGalat").textContent = ""; $("#csvHasil").textContent = ""; });
+  return { set(k){ plat = k; seg.set(k); render(); }, get:() => plat, tampilCocok };
+})();
+
+/* ---------- 4. TANDA BAHAYA ---------- */
+const tb = (function(){
+  let plat = "C", bulan = 12;
+  const g = buatGrafik($("#tbSvg"), $("#tbTip"));
+  function ambangTeks(id, cfg){
+    const t = cfg.ambang[id];
+    return IND[id].arah === "naik" ? "Hijau &ge; " + angka(t.g) + "%, merah &lt; " + angka(t.r) + "%" : "Hijau &lt; " + angka(t.g) + "%, merah &gt; " + angka(t.r) + "%";
+  }
+  function render(){
+    const p = DATA[plat], h = hitungSkor(p.bulan[bulan - 1], STATE.legal[plat]);
+    $("#tbInfo").textContent = catatanLegal();
+    const sk = h.penahan && h.penahan.mengubah ? '<p class="note">Status menurut skor saja: ' + statusText(h.statusSkor) + ".</p>" : "";
+    $("#tbHero").innerHTML =
+      '<p class="eyebrow">' + p.nama + ", bulan " + bulan + "</p>" +
+      '<div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap"><span class="angka" id="tbAngka">' + angka(h.total, 1) + "<small>/100</small></span>" + chip(h.status) + "</div>" + sk +
+      '<p class="penahan">' + (h.penahan ? "<b>" + esc(kalimatPenahan(h)) + "</b>" : "Aturan penahan tidak aktif: tidak ada indikator yang berstatus merah.") + "</p>" +
+      '<p class="note">Skor total = jumlah (bobot x skor indikator) / 100. Hijau 75 ke atas, kuning 45 sampai 74, merah di bawah 45.</p>';
+    const pj = penjelasan(h), pt = pertanyaanUntuk(h, STATE.legal[plat]);
+    $("#tbAlasan").innerHTML = "<h3>Penjelasan otomatis</h3>" +
+      (pj.length ? "<ul>" + pj.map((t) => "<li>" + esc(t) + "</li>").join("") + "</ul>" : '<p class="note">Semua indikator berada di zona hijau.</p>') +
+      "<h3>Pertanyaan untuk penyelenggara</h3>" +
+      (pt.length ? "<ul>" + pt.map((t) => "<li>" + esc(t) + "</li>").join("") + "</ul>" : '<p class="note">Tidak ada pertanyaan khusus. Tetap minta laporan rekonsiliasi rutin.</p>');
+    $("#tbCap").textContent = "Lima indikator " + p.nama + ", bulan " + bulan;
+    $("#tbTable tbody").innerHTML = ID_IND.map((id) => {
+      const d = h.ind[id];
+      const ilus = id === "I1" && plat === "C" && d.lv === 2 ? '<span class="ilus">Ilustrasi</span>' : "";
+      return '<tr class="' + (d.lv ? "lv" + d.lv : "") + '" data-ind="' + id + '"><th scope="row"><span class="ind-name">' + id + " " + IND[id].nama + ilus + "<small>" + esc(IND[id].rumus) + "</small></span></th>" +
+        '<td class="r num" data-k="nilai" data-l="Nilai">' + nilaiTeks(id, d.nilai) + '</td><td data-l="Ambang">' + ambangTeks(id, h.cfg) + '</td><td class="r num" data-l="Bobot">' + angka(d.bobot, 1) + '%</td><td class="r num" data-l="Skor indikator">' + d.skor + '</td><td class="r num" data-k="kontribusi" data-l="Kontribusi">' + fmt(d.kontribusi, 1) + '</td><td data-l="Status">' + chipInd(d) + "</td></tr>";
+    }).join("") + '<tr><th scope="row">Skor total</th><td></td><td></td><td class="r num" data-l="Bobot">100%</td><td></td><td class="r num" data-k="total" data-l="Skor total"><b>' + fmt(h.total, 1) + '</b></td><td data-l="Status">' + chip(h.status) + "</td></tr>";
+    const semua = p.bulan.map((m) => hitungSkor(m, STATE.legal[plat]));
+    g.opsi = {
+      seri:[{ nama:"Skor total", pendek:"Skor", nilai:semua.map((x) => x.total), warna:"var(--accent)", bentuk:"lingkaran" }],
+      label:labelBulan, yMin:0, yMax:100, langkah:25,
+      pita:[{ dari:75, ke:100, isi:"var(--ok-bg)", opasitas:.6 }, { dari:45, ke:75, isi:"var(--warn-bg)", opasitas:.6 }, { dari:0, ke:45, isi:"var(--bad-bg)", opasitas:.6 }],
+      acuan:[{ v:75, teks:"75 batas hijau" }, { v:45, teks:"45 batas merah" }],
+      statusTitik:(i) => semua[i].status, terpilih:bulan - 1,
+      aria:"Tren skor " + p.nama + " selama 12 bulan. Pilih bulan dengan Tab lalu Enter.",
+      ariaTitik:(i) => "Bulan " + (i + 1) + ": skor " + angka(semua[i].total, 1) + ", " + statusText(semua[i].status),
+      tip:(i) => "<b>Bulan " + (i + 1) + "</b><br>Skor " + angka(semua[i].total, 1) + "<br>" + statusText(semua[i].status) + (semua[i].penahan ? "<br>Aturan penahan aktif" : ""),
+      pilih:(i) => { bulan = i + 1; bln.set(bulan); render(); }
+    };
+    gambarGrafik(g);
+  }
+  const seg = segPlatform($("#tbPlat"), "tbPlat", plat, (k) => { plat = k; render(); });
+  const bln = pilihBulan($("#tbBulan"), "tbBulanSel", bulan, (b) => { bulan = b; render(); });
+  RENDER["tanda-bahaya"] = render;
+  return { set(k, b){ plat = k; bulan = b; seg.set(k); bln.set(b); render(); }, get:() => ({ plat, bulan }) };
+})();
+
+/* ---------- 5. UJI SENSITIVITAS ---------- */
+(function sensitivitas(){
+  let plat = "B", bulan = 12;     // B bulan 12 dipilih karena statusnya campuran, jadi efek penggeser terlihat
+  const cfg = salin(CFG_DEFAULT);
+  try {                                            // bobot terakhir dari localStorage, bila ada dan valid
+    const b = JSON.parse(localStorage.getItem("telusurdana.bobot") || "null");
+    if (b && ID_IND.every((id) => isFinite(Number(b[id])) && Number(b[id]) >= 0 && Number(b[id]) <= 100)) ID_IND.forEach((id) => { cfg.bobot[id] = Number(b[id]); });
+  } catch (e) {}
+  const SLIDER = [
+    { id:"I1", k:"g", label:"I1 batas hijau", sub:"hijau bila di bawah", min:0, max:50, step:1 },
+    { id:"I1", k:"r", label:"I1 batas merah", sub:"merah bila di atas", min:0, max:80, step:1 },
+    { id:"I2", k:"g", label:"I2 batas hijau", sub:"hijau bila di bawah", min:0, max:5, step:0.1 },
+    { id:"I2", k:"r", label:"I2 batas merah", sub:"merah bila di atas", min:0, max:10, step:0.1 },
+    { id:"I3", k:"g", label:"I3 batas hijau", sub:"hijau bila di bawah", min:0, max:60, step:1 },
+    { id:"I3", k:"r", label:"I3 batas merah", sub:"merah bila di atas", min:0, max:90, step:1 },
+    { id:"I4", k:"g", label:"I4 batas hijau", sub:"hijau bila di bawah", min:0, max:20, step:0.5 },
+    { id:"I4", k:"r", label:"I4 batas merah", sub:"merah bila di atas", min:0, max:30, step:0.5 },
+    { id:"I5", k:"g", label:"I5 batas hijau", sub:"hijau bila minimal", min:0, max:100, step:5 },
+    { id:"I5", k:"r", label:"I5 batas merah", sub:"merah bila di bawah", min:0, max:100, step:5 },
+    { id:"lampu", k:"g", label:"Status total hijau", sub:"hijau bila skor minimal", min:50, max:100, step:1, tanpaPersen:true },
+    { id:"lampu", k:"r", label:"Status total merah", sub:"merah bila skor di bawah", min:0, max:80, step:1, tanpaPersen:true },
+  ];
+  const wadah = (id) => (id === "lampu" ? cfg.lampu : cfg.ambang[id]);
+  const naik = (id) => id === "lampu" || IND[id].arah === "naik";   // untuk ini batas merah harus <= batas hijau
+  $("#sensBobot").innerHTML = ID_IND.map((id) => '<div class="slider"><label for="sb-' + id + '">' + id + " " + IND[id].pendek + "<small>bobot dalam persen</small></label>" +
+    '<input type="range" id="sb-' + id + '" data-b="' + id + '" min="0" max="100" step="1" value="' + cfg.bobot[id] + '"><output for="sb-' + id + '" id="so-' + id + '">' + cfg.bobot[id] + "%</output></div>").join("");
+  $("#sensAmbang").innerHTML = SLIDER.map((s, i) => '<div class="slider"><label for="sa-' + i + '">' + s.label + "<small>" + s.sub + "</small></label>" +
+    '<input type="range" id="sa-' + i + '" data-a="' + i + '" min="' + s.min + '" max="' + s.max + '" step="' + s.step + '" value="' + wadah(s.id)[s.k] + '"><output for="sa-' + i + '" id="sao-' + i + '"></output></div>').join("");
+  function isiSlider(){
+    ID_IND.forEach((id) => { $("#sb-" + id).value = cfg.bobot[id]; $("#so-" + id).textContent = angka(cfg.bobot[id], 1) + "%"; });
+    SLIDER.forEach((s, i) => { const v = wadah(s.id)[s.k]; $("#sa-" + i).value = v; $("#sao-" + i).textContent = angka(v, 1) + (s.tanpaPersen ? "" : "%"); });
+  }
+  function simpanBobot(){ try { localStorage.setItem("telusurdana.bobot", JSON.stringify(cfg.bobot)); } catch (e) {} }
+  $("#sensBobot").addEventListener("input", (e) => {
+    const id = e.target.dataset.b; if (!id) return;
+    cfg.bobot[id] = Number(e.target.value); $("#so-" + id).textContent = angka(cfg.bobot[id], 1) + "%"; simpanBobot(); render();
+  });
+  let catatanUrut = "";
+  $("#sensAmbang").addEventListener("input", (e) => {
+    const i = e.target.dataset.a; if (i == null) return;
+    const s = SLIDER[+i], w = wadah(s.id), v = Number(e.target.value);
+    w[s.k] = v; catatanUrut = "";
+    // jaga urutan: indikator "turun" butuh hijau <= merah; I5 dan status total butuh merah <= hijau
+    const kecil = naik(s.id) ? "r" : "g", besar = naik(s.id) ? "g" : "r";
+    if (w[kecil] > w[besar]){
+      if (s.k === kecil) w[besar] = w[kecil]; else w[kecil] = w[besar];
+      catatanUrut = "Batas " + (s.id === "lampu" ? "status total" : s.id) + " disesuaikan agar batas merah dan hijau tidak bertukar tempat.";
+    }
+    isiSlider(); render();
+  });
+  $("#sensReset").addEventListener("click", () => {
+    const d = salin(CFG_DEFAULT); cfg.bobot = d.bobot; cfg.ambang = d.ambang; cfg.lampu = d.lampu; catatanUrut = "";
+    try { localStorage.removeItem("telusurdana.bobot"); } catch (e) {}
+    isiSlider(); render(); toast("Ambang dan bobot dikembalikan ke bawaan.");
+  });
+  function kartu(judul, h, pembanding){
+    const li = ID_IND.map((id) => {
+      const beda = pembanding && pembanding.ind[id].lv !== h.ind[id].lv;
+      return "<li><span>" + id + " " + IND[id].pendek + '</span><span class="' + (beda ? "berubah" : "") + '">' + chipInd(h.ind[id]) + "</span></li>";
+    }).join("");
+    const bedaTotal = pembanding && pembanding.status !== h.status;
+    return '<div class="card"><p class="eyebrow">' + judul + '</p><div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap"><span style="font-size:42px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums">' + angka(h.total, 1) + '</span><span class="' + (bedaTotal ? "berubah" : "") + '">' + chip(h.status) + "</span></div>" +
+      (h.penahan ? '<p class="note">' + esc(kalimatPenahan(h)) + "</p>" : "") + '<ul class="mini">' + li + "</ul></div>";
+  }
+  function render(){
+    const m = DATA[plat].bulan[bulan - 1], L = STATE.legal[plat];
+    const hd = hitungSkor(m, L, CFG_DEFAULT), hc = hitungSkor(m, L, cfg);
+    const nb = normalisasiBobot(cfg.bobot);
+    $("#sensTotal").textContent = "Total bobot saat ini " + angka(nb.totalAsli, 1) + "%." + (nb.dinormalkan ? "" : " Sudah 100%.");
+    $("#sensInfo").textContent = [nb.pesan, catatanUrut, catatanLegal()].filter(Boolean).join(" ");
+    $("#sensBanding").innerHTML = kartu("Bawaan, " + DATA[plat].nama + " bulan " + bulan, hd) + kartu("Setelan Anda", hc, hd);
+    $("#sensTable tbody").innerHTML = PLATFORM.map((k) => {
+      const mm = DATA[k].bulan[bulan - 1], a = hitungSkor(mm, STATE.legal[k], CFG_DEFAULT), b = hitungSkor(mm, STATE.legal[k], cfg);
+      const fa = bulanPertama(k, 1, STATE.legal[k], CFG_DEFAULT), fb = bulanPertama(k, 1, STATE.legal[k], cfg);
+      return '<tr><th scope="row">' + DATA[k].nama + '</th><td class="r num">' + angka(a.total, 1) + "</td><td>" + chip(a.status) + '</td><td class="r num">' + angka(b.total, 1) + "</td><td>" + chip(b.status) + "</td><td>" + (fa ? "Bulan " + fa : "tidak ada") + " / " + (fb ? "Bulan " + fb : "tidak ada") + "</td></tr>";
+    }).join("");
+  }
+  segPlatform($("#sensPlat"), "sensPlat", plat, (k) => { plat = k; render(); });
+  pilihBulan($("#sensBulan"), "sensBulanSel", bulan, (b) => { bulan = b; render(); });
+  isiSlider();
+  RENDER.sensitivitas = render;
+})();
+
+/* ---------- 6. DASBOR PEMBERI DANA ---------- */
+(function pemberiDana(){
+  let bulan = 12;
+  function render(){
+    $("#pdInfo").textContent = catatanLegal();
+    $("#pdKartu").innerHTML = PLATFORM.map((k) => {
+      const p = DATA[k], h = hitungSkor(p.bulan[bulan - 1], STATE.legal[k]);
+      const al = alasanUtama(h).slice(0, 3), pt = pertanyaanUntuk(h, STATE.legal[k]).slice(0, 3);
+      return '<article class="card pd-card" aria-label="' + p.nama + '"><div class="atas"><div><p class="eyebrow">' + p.nama + '</p><div class="skor-k">' + angka(h.total, 1) + "<small>/100</small></div></div>" + chip(h.status) + "</div>" +
+        (h.penahan ? '<p class="penahan">' + esc(kalimatPenahan(h)) + "</p>" : "") +
+        "<h4>Tiga alasan utama</h4>" + (al.length ? '<ol class="plain">' + al.map((a) => "<li>" + esc(a.teks) + "</li>").join("") + "</ol>" : '<p class="note">Tidak ada indikator di luar zona hijau pada bulan ini.</p>') +
+        "<h4>Pertanyaan untuk penyelenggara</h4>" + (pt.length ? '<ul class="plain">' + pt.map((t) => "<li>" + esc(t) + "</li>").join("") + "</ul>" : '<p class="note">Tetap minta laporan rekonsiliasi rutin sebagai kebiasaan.</p>') +
+        '<button class="btn small" type="button" data-rinci="' + k + '">Lihat rincian di Tanda Bahaya</button></article>';
+    }).join("");
+  }
+  $("#pdKartu").addEventListener("click", (e) => { const b = e.target.closest("[data-rinci]"); if (!b) return; show("tanda-bahaya", true); tb.set(b.dataset.rinci, bulan); });
+  pilihBulan($("#pdBulan"), "pdBulanSel", bulan, (b) => { bulan = b; render(); });
+  RENDER["pemberi-dana"] = render;
+})();
+
+/* ---------- 7. DASBOR REGULATOR ---------- */
+const reg = (function(){
+  let bulan = 12;
+  const urut = { kunci:"skor", arah:1 };           // 1 = naik (skor terendah, paling berisiko, di atas)
+  const g = buatGrafik($("#regSvg"), $("#regTip"));
+  const SERI = { A:{ warna:"var(--s1)", bentuk:"lingkaran" }, B:{ warna:"var(--s2)", bentuk:"kotak" }, C:{ warna:"var(--s3)", bentuk:"belah" } };
+  $("#regLegend").innerHTML = PLATFORM.map((k) => '<span><svg viewBox="0 0 26 12" aria-hidden="true"><line x1="1" x2="25" y1="6" y2="6" stroke="' + SERI[k].warna + '" stroke-width="2"/>' + bentukSVG(SERI[k].bentuk, 13, 6, SERI[k].warna, 4) + "</svg>" + DATA[k].nama + "</span>").join("");
+  // daftar pantauan: merah, atau kuning yang memburuk (skor lebih rendah daripada 3 bulan sebelumnya). Asumsi rancangan.
+  function baris(){
+    const b0 = Math.max(1, bulan - 3);
+    return PLATFORM.map((k) => {
+      const h = hitungSkor(DATA[k].bulan[bulan - 1], STATE.legal[k]), h0 = hitungSkor(DATA[k].bulan[b0 - 1], STATE.legal[k]);
+      const delta = bulan > 1 ? bulat9(h.total - h0.total) : null;
+      const merah = ID_IND.filter((id) => h.ind[id].lv === 2).length;
+      const pantau = h.status === 2 || (h.status === 1 && delta != null && delta < 0);
+      return { k, nama:DATA[k].nama, h, h0, b0, skor:h.total, status:h.status, delta, merah, pantau };
+    });
+  }
+  function render(){
+    const rows = baris();
+    $("#regInfo").textContent = catatanLegal();
+    const nilai = (r) => (urut.kunci === "nama" ? r.nama : urut.kunci === "delta" ? (r.delta == null ? 0 : r.delta) : r[urut.kunci]);
+    rows.sort((a, b) => { const x = nilai(a), y = nilai(b); return (x < y ? -1 : x > y ? 1 : 0) * urut.arah || a.nama.localeCompare(b.nama); });
+    $$("#regTable thead th[data-kunci]").forEach((th) => {
+      const aktif = th.dataset.kunci === urut.kunci;
+      if (aktif) th.setAttribute("aria-sort", urut.arah === 1 ? "ascending" : "descending"); else th.removeAttribute("aria-sort");
+      th.querySelector(".arah").textContent = aktif ? (urut.arah === 1 ? "▲" : "▼") : "";
+    });
+    $("#regCap").textContent = "Peringkat platform, bulan " + bulan;
+    $("#regTable tbody").innerHTML = rows.map((r) => '<tr class="' + (r.status ? "lv" + r.status : "") + '"><th scope="row">' + r.nama + '</th><td class="r num">' + angka(r.skor, 1) + "</td><td>" + chip(r.status) + '</td><td class="r num">' + (r.delta == null ? "-" : sgn(r.delta, 1)) + ' <span class="note">(vs B' + r.b0 + ')</span></td><td class="r num">' + r.merah + " dari 5</td><td>" + (r.h.penahan ? (r.h.penahan.aturan === "dua" ? "Aktif: I1 dan I2 merah" : "Aktif: " + r.h.penahan.id + " merah") : "Tidak aktif") + "</td></tr>").join("");
+    const pantau = rows.filter((r) => r.pantau);
+    $("#regWatch").innerHTML = '<h3 id="h-watch">Daftar pantauan bulan ' + bulan + "</h3>" +
+      '<p class="note">Masuk daftar bila status merah, atau kuning dengan skor lebih rendah daripada tiga bulan sebelumnya. <span class="asumsi">Asumsi rancangan, belum divalidasi</span></p>' +
+      (pantau.length ? "<ul>" + pantau.map((r) => {
+        const fm = bulanPertama(r.k, 2, STATE.legal[r.k]), fk = bulanPertama(r.k, 1, STATE.legal[r.k]);
+        const al = alasanUtama(r.h).slice(0, 2).map((a) => a.teks).join(" ");
+        const alasan = r.status === 2 ? "Merah sejak Bulan " + fm + "." : "Kuning sejak Bulan " + fk + ", skor turun dari " + angka(r.h0.total, 1) + " (Bulan " + r.b0 + ") menjadi " + angka(r.skor, 1) + ".";
+        return '<li class="item">' + chip(r.status) + "<div><b>" + r.nama + "</b><p>" + esc(alasan) + '</p><p class="note">' + esc(al) + "</p></div></li>";
+      }).join("") + "</ul>" : '<p class="note">Tidak ada platform yang masuk daftar pantauan pada bulan ini.</p>');
+    const tot = {}; PLATFORM.forEach((k) => { tot[k] = DATA[k].bulan.map((m) => hitungSkor(m, STATE.legal[k]).total); });
+    g.opsi = {
+      seri:PLATFORM.map((k) => ({ nama:DATA[k].nama, pendek:"Contoh " + k, nilai:tot[k], warna:SERI[k].warna, bentuk:SERI[k].bentuk })),
+      label:labelBulan, yMin:0, yMax:100, langkah:25,
+      acuan:[{ v:75, teks:"75 batas hijau" }, { v:45, teks:"45 batas merah" }], terpilih:bulan - 1,
+      aria:"Tren skor tiga platform selama 12 bulan. Pilih bulan dengan Tab lalu Enter.",
+      ariaTitik:(i) => "Bulan " + (i + 1) + ": " + PLATFORM.map((k) => "Contoh " + k + " " + angka(tot[k][i], 1)).join(", "),
+      tip:(i) => "<b>Bulan " + (i + 1) + "</b><br>" + PLATFORM.map((k) => "Contoh " + k + ": " + angka(tot[k][i], 1)).join("<br>"),
+      pilih:(i) => { bulan = i + 1; bln.set(bulan); render(); }
+    };
+    gambarGrafik(g);
+    const tglCetak = new Date().toLocaleDateString("id-ID", { day:"numeric", month:"long", year:"numeric" });
+    $("#regCetakJudul").innerHTML = '<h1 style="font-family:var(--f-display);font-size:22pt;margin:0 0 4px">Ringkasan Dasbor Regulator TelusurDana</h1><p>Bulan ' + bulan + ", dicetak " + tglCetak + ". Prototipe konsep dengan data simulasi.</p>";
+  }
+  $$("#regTable thead th[data-kunci] .btn-sort").forEach((b) => b.addEventListener("click", () => {
+    const k = b.closest("th").dataset.kunci;
+    if (urut.kunci === k) urut.arah *= -1; else { urut.kunci = k; urut.arah = 1; }
+    render();
+  }));
+  const bln = pilihBulan($("#regBulan"), "regBulanSel", bulan, (b) => { bulan = b; render(); });
+  // --- ekspor CSV (pemisah titik koma dan koma desimal agar rapi di Excel berbahasa Indonesia) ---
+  const csvAngka = (x, d) => (x == null ? "" : x.toFixed(d).replace(".", ","));
+  function buatCSV(){
+    const kol = ["Platform", "Bulan", "Skor total", "Status", "Aturan penahan"];
+    ID_IND.forEach((id) => { kol.push(id + " " + IND[id].pendek + " (%)", "Status " + id); });
+    const out = ["# PROTOTIPE KONSEP. Data simulasi, bukan penilaian terhadap perusahaan nyata. Ambang dan bobot: asumsi rancangan, belum divalidasi.", kol.join(";")];
+    PLATFORM.forEach((k) => DATA[k].bulan.forEach((m, i) => {
+      const h = hitungSkor(m, STATE.legal[k]);
+      const r = [DATA[k].nama, i + 1, csvAngka(h.total, 1), statusText(h.status), h.penahan ? (h.penahan.aturan === "dua" ? "I1 dan I2 merah" : h.penahan.id + " merah") : "tidak aktif"];
+      ID_IND.forEach((id) => { r.push(csvAngka(h.ind[id].nilai, 2), statusText(h.ind[id].lv)); });
+      out.push(r.join(";"));
+    }));
+    return "﻿" + out.join("\r\n") + "\r\n";
+  }
+  async function eksporCSV(){
+    const nama = "telusurdana_ringkasan_regulator.csv", teks = buatCSV();
+    if (MODE === "artifact"){
+      let dl = null;
+      try { dl = window.claude && window.claude.use ? await window.claude.use("downloads") : null; } catch (e) { dl = null; }
+      if (!dl){ toast("Unduhan tidak tersedia di tampilan ini. Buka berkas index.html untuk mengekspor CSV."); return; }
+      try { await dl.save({ filename:nama, data:teks }); toast("Berkas " + nama + " diserahkan untuk disimpan."); }
+      catch (e){ toast(e && e.code === "declined" ? "Penyimpanan dibatalkan." : "CSV belum bisa disimpan di tampilan ini."); }
+      return;
+    }
+    try {
+      const url = URL.createObjectURL(new Blob([teks], { type:"text/csv;charset=utf-8" }));
+      const a = document.createElement("a"); a.href = url; a.download = nama; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+      toast("Berkas " + nama + " diunduh.");
+    } catch (e){ toast("Browser menolak unduhan. Coba browser lain."); }
+  }
+  $("#regCSV").addEventListener("click", eksporCSV);
+  if (MODE === "artifact"){ $("#regCetak").hidden = true; $("#regCatatanCetak").hidden = false; }
+  $("#regCetak").addEventListener("click", () => { render(); window.print(); });
+  RENDER.regulator = render;
+  return { set(b){ bulan = b; bln.set(b); render(); }, buatCSV };
+})();
+
+/* ---------- 9. TENTANG ---------- */
+(function tentang(){
+  const t = CFG_DEFAULT.ambang, kel = (id) => {
+    const a = t[id];
+    if (IND[id].arah === "naik") return ["&ge; " + angka(a.g) + "%", angka(a.r) + " sampai " + angka(a.g - 1) + "%", "&lt; " + angka(a.r) + "%"];
+    return ["&lt; " + angka(a.g) + "%", angka(a.g) + " sampai " + angka(a.r) + "%", "&gt; " + angka(a.r) + "%"];
+  };
+  $("#tenTable tbody").innerHTML = ID_IND.map((id) => { const z = kel(id); return '<tr><th scope="row">' + id + " " + IND[id].nama + "</th><td>" + esc(IND[id].rumus) + "</td><td>" + z[0] + "</td><td>" + z[1] + "</td><td>" + z[2] + '</td><td class="r num">' + CFG_DEFAULT.bobot[id] + '%</td><td><span class="asumsi">Asumsi rancangan, belum divalidasi</span></td></tr>'; }).join("");
+  // contoh hitung langkah demi langkah, disusun langsung dari data agar selalu sama dengan mesin skor
+  const k = "B", b = 12, m = DATA[k].bulan[b - 1], h = hitungSkor(m, LEGAL_CONTOH[k]), kl = kelengkapan(LEGAL_CONTOH[k]);
+  const st = (id) => LAMP[h.ind[id].lv].w.toLowerCase() + ", skor " + h.ind[id].skor;
+  const langkah = [
+    "I1 = " + fmt(m.pencairan_terafiliasi) + " / " + fmt(m.total_pencairan) + " x 100 = " + fmt(h.ind.I1.nilai, 2) + "% (" + st("I1") + ")",
+    "I2 = |" + fmt(m.saldo_laporan) + " - " + fmt(m.saldo_rekening) + "| / " + fmt(m.saldo_rekening) + " x 100 = " + fmt(h.ind.I2.nilai, 2) + "% (" + st("I2") + ")",
+    "I3 = " + fmt(m.pendanaan_5_terbesar) + " / " + fmt(m.pendanaan_total) + " x 100 = " + fmt(h.ind.I3.nilai, 2) + "% (" + st("I3") + ")",
+    "I4 = " + fmt(m.outstanding_macet_90) + " / " + fmt(m.outstanding) + " x 100 = " + fmt(h.ind.I4.nilai, 2) + "% (" + st("I4") + ")",
+    "I5 = " + kl.ya + " / " + kl.total + " x 100 = " + fmt(h.ind.I5.nilai, 0) + "% (" + st("I5") + ")",
+    "Skor total = " + ID_IND.map((id) => "0,2 x " + h.ind[id].skor).join(" + ") + " = " + angka(h.total, 1),
+    "Status: " + angka(h.total, 1) + " berada di rentang " + (h.statusSkor === 0 ? "hijau (75 ke atas)" : h.statusSkor === 1 ? "kuning (45 sampai 74)" : "merah (di bawah 45)") + ". " + (h.penahan ? kalimatPenahan(h) : "Tidak ada indikator merah, jadi aturan penahan tidak berlaku.") + " Hasil akhir: " + statusText(h.status) + "."
+  ];
+  $("#tenContoh").innerHTML = "<h3>Contoh hitung: " + DATA[k].nama + ", bulan " + b + " (Rp juta)</h3><ol class=\"plain\">" + langkah.map((x) => '<li class="mono" style="font-size:13px">' + esc(x) + "</li>").join("") + "</ol>";
+  const asumsi = [
+    "Semua ambang dan bobot adalah asumsi rancangan, belum divalidasi.",
+    "Bobot bawaan 20% untuk tiap indikator. Bobot yang tidak berjumlah 100 dinormalkan otomatis; bobot negatif dianggap nol.",
+    "Indikator yang tidak dapat dihitung karena penyebutnya nol dianggap kuning sampai datanya lengkap.",
+    "Pendanaan total disederhanakan sama dengan total pencairan bulan itu.",
+    "Rasio terafiliasi Platform Contoh C bulan 12 (67%) adalah ilustrasi.",
+    "Daftar pantauan regulator memuat status merah, atau kuning dengan skor lebih rendah daripada tiga bulan sebelumnya.",
+    "Pencocokan CSV memakai referensi dan jumlah persis sama; tanggal tidak ikut dicocokkan karena jeda kliring antarbank."
+  ];
+  $("#tenAsumsi").innerHTML = asumsi.map((x) => "<li>" + esc(x) + "</li>").join("");
+  $("#tenVersi").textContent = "Versi " + VERSI + ", dibuat " + TANGGAL + ". Prototipe konsep untuk IAC 2026 Essay Competition, Tim Little Boy.";
+  // teks untuk Lampiran 3 dan 4: setelan bawaan dan jawaban legalitas contoh
+  function teksTabel(){
+    const T = "\t", baris = [];
+    baris.push("Ringkasan indikator TelusurDana (asumsi rancangan, belum divalidasi)");
+    baris.push(["Indikator", "Rumus", "Hijau", "Kuning", "Merah", "Bobot", "Status asumsi"].join(T));
+    ID_IND.forEach((id) => { const z = kel(id).map((s) => s.replace("&ge;", ">=").replace("&lt;", "<").replace("&gt;", ">")); baris.push([id + " " + IND[id].nama, IND[id].rumus, z[0], z[1], z[2], CFG_DEFAULT.bobot[id] + "%", "Asumsi rancangan, belum divalidasi"].join(T)); });
+    baris.push("Skor indikator: hijau 100, kuning 50, merah 0. Skor total = jumlah (bobot x skor indikator) / 100. Status total: hijau >= 75, kuning 45 sampai 74, merah < 45. Aturan penahan: bila satu indikator saja merah, status total paling baik kuning; bila I1 dan I2 sama-sama merah, status total merah; penahan hanya berlaku untuk indikator berbobot lebih dari nol.");
+    baris.push("");
+    baris.push("Nilai indikator tiga platform fiktif, bulan 12 (data simulasi)");
+    baris.push(["Platform"].concat(ID_IND.map((id) => id + " " + IND[id].pendek)).concat(["Skor akhir", "Status akhir"]).join(T));
+    PLATFORM.forEach((kk) => {
+      const hh = hitungSkor(DATA[kk].bulan[11], LEGAL_CONTOH[kk]);
+      baris.push([DATA[kk].nama].concat(ID_IND.map((id) => nilaiTeks(id, hh.ind[id].nilai) + " (" + LAMP[hh.ind[id].lv].w + ")" + (kk === "C" && id === "I1" ? " ilustrasi" : ""))).concat([angka(hh.total, 1), statusText(hh.status)]).join(T));
+    });
+    baris.push("Sumber: prototipe TelusurDana (data simulasi).");
+    return baris.join("\n");
+  }
+  $("#tenTeks").textContent = teksTabel();
+  $("#tenSalin").addEventListener("click", () => {
+    const teks = teksTabel();
+    const cadangan = () => {        // bila clipboard ditolak: pilih teks agar bisa disalin manual (Ctrl+C)
+      const r = document.createRange(); r.selectNodeContents($("#tenTeks"));
+      const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+      let ok = false; try { ok = document.execCommand("copy"); } catch (e) {}
+      toast(ok ? "Tabel disalin." : "Teks sudah dipilih. Tekan Ctrl+C untuk menyalin.");
+    };
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(teks).then(() => toast("Tabel disalin. Tempel ke Excel atau Word."), cadangan);
+      else cadangan();
+    } catch (e){ cadangan(); }
+  });
+  RENDER.tentang = () => {};
+})();
+
+/* =====================================================================
+   DEMO
+   Panduan tiga menit. Setiap langkah membuka layar, menjalankan aksi
+   (misalnya memilih Platform C bulan 8), lalu menyorot elemen.
+   ===================================================================== */
+const LANGKAH = [
+  { view:"beranda", sel:".hero", dtk:20, judul:"Masalahnya: audit tahunan datang terlambat",
+    teks:"Audit tahunan memeriksa periode yang sudah lewat. TelusurDana mencocokkan data secara berkelanjutan dan memberi lampu beserta alasannya." },
+  { view:"beranda", sel:"#petaKartu", dtk:20, judul:"Satu tahun dalam satu peta",
+    teks:"Tiga platform fiktif. Contoh C sudah kuning sejak bulan 1 karena legalitasnya tidak lengkap, lalu merah di bulan 8, jauh sebelum opini audit terbit setelah tutup buku." },
+  { view:"rekonsiliasi", sel:"#rekChart", dtk:25, aksi:() => rek.set("C"), judul:"Rekonsiliasi: laporan vs rekening",
+    teks:"Saldo laporan Contoh C hampir tetap, sedangkan saldo rekening penampung terus turun. Selisihnya melebar sampai 24,5% di bulan 12." },
+  { view:"rekonsiliasi", sel:"#rekTabelKartu", dtk:15, judul:"Baris yang tidak cocok ditandai",
+    teks:"Setiap bulan diberi status dengan ikon dan teks, bukan warna saja. Angka mentahnya bisa diperiksa ulang dengan kalkulator." },
+  { view:"tanda-bahaya", sel:"#tbHero", dtk:20, aksi:() => tb.set("C", 6), judul:"Bulan 6: skor mulai turun",
+    teks:"Dana ke pihak terafiliasi naik ke 14% dan selisih saldo 0,92%. Skor turun dari 80 ke 60, dan pertanyaan untuk penyelenggara bertambah." },
+  { view:"tanda-bahaya", sel:"#tbAlasan", dtk:25, aksi:() => tb.set("C", 8), judul:"Bulan 8: merah, lengkap dengan alasannya",
+    teks:"I1 dan I2 sama-sama merah, jadi aturan penahan membuat status merah. Mesin menulis alasan dan pertanyaan untuk penyelenggara secara otomatis." },
+  { view:"tanda-bahaya", sel:"#tbChart", dtk:15, judul:"Tren skor",
+    teks:"Skor 80 di awal tahun, 60 di bulan 6, lalu jatuh ke 20 di bulan 8. Pola ini yang luput bila hanya menunggu audit tahunan." },
+  { view:"regulator", sel:"#regTabelKartu", dtk:20, aksi:() => reg.set(12), judul:"Dasbor Regulator",
+    teks:"Pengawas melihat peringkat semua platform, perubahan skor tiga bulan, dan aturan penahan yang aktif. Tabel bisa diurutkan dan diekspor ke CSV." },
+  { view:"regulator", sel:"#regWatch", dtk:20, judul:"Daftar pantauan, bukan vonis",
+    teks:"Contoh C merah dan Contoh B kuning yang memburuk masuk daftar pantauan. Skor merah adalah peringatan dini untuk diperiksa manusia, bukan vonis." },
+];
+const tour = (function(){
+  let i = 0, aktif = false, asal = null;
+  const panel = $("#tour");
+  function bersih(){ $$(".sorot").forEach((e) => e.classList.remove("sorot")); }
+  function tampil(n){
+    i = Math.max(0, Math.min(LANGKAH.length - 1, n));
+    const L = LANGKAH[i];
+    show(L.view, false);
+    if (L.aksi) L.aksi();
+    bersih();
+    const target = $(L.sel);
+    if (target){
+      target.classList.add("sorot");
+      const halus = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      target.scrollIntoView({ block:"center", behavior: halus ? "smooth" : "auto" });
+    }
+    const lewat = LANGKAH.slice(0, i).reduce((a, x) => a + x.dtk, 0);
+    $("#tourLangkah").textContent = "Langkah " + (i + 1) + " dari " + LANGKAH.length + ", menit " + Math.floor(lewat / 60) + ":" + String(lewat % 60).padStart(2, "0");
+    $("#tourJudul").textContent = L.judul;
+    $("#tourTeks").textContent = L.teks;
+    $("#tourProg").style.width = ((i + 1) / LANGKAH.length * 100) + "%";
+    $("#tourPrev").disabled = i === 0;
+    $("#tourNext").textContent = i === LANGKAH.length - 1 ? "Selesai" : "Berikutnya";
+    $("#tourJudul").focus({ preventScroll:true });
+  }
+  function mulai(dari){ asal = dari || document.activeElement; aktif = true; panel.hidden = false; tampil(0); }
+  function tutup(){
+    if (!aktif) return;
+    aktif = false; panel.hidden = true; bersih();
+    if (asal && document.contains(asal) && asal.offsetParent) asal.focus(); else $("#main").focus();
+  }
+  $("#tourNext").addEventListener("click", () => { if (i === LANGKAH.length - 1){ tutup(); toast("Demo selesai."); } else tampil(i + 1); });
+  $("#tourPrev").addEventListener("click", () => tampil(i - 1));
+  $("#tourTutup").addEventListener("click", tutup);
+  document.addEventListener("keydown", (e) => {
+    if (!aktif) return;
+    if (e.key === "Escape"){ e.preventDefault(); tutup(); return; }
+    if (!panel.contains(document.activeElement)) return;
+    if (e.key === "ArrowRight" && i < LANGKAH.length - 1){ e.preventDefault(); tampil(i + 1); }
+    if (e.key === "ArrowLeft" && i > 0){ e.preventDefault(); tampil(i - 1); }
+  });
+  const total = LANGKAH.reduce((a, x) => a + x.dtk, 0);
+  $("#demoTotal").textContent = "Total " + Math.floor(total / 60) + " menit " + (total % 60 ? (total % 60) + " detik" : "") + ", " + LANGKAH.length + " langkah.";
+  $("#demoList").innerHTML = LANGKAH.map((L) => '<li><span class="dur">' + L.dtk + " dtk</span><span><b>" + esc(L.judul) + "</b><br>" + esc(L.teks) + "</span></li>").join("");
+  RENDER.demo = () => {};
+  return { mulai, tutup, aktif:() => aktif, langkah:() => i, tampil };
+})();
+
+/* =====================================================================
+   UJI
+   Nilai harapan dihitung manual dari data mentah (lihat komentar tiap
+   pemeriksaan) dan ditulis sebagai angka tetap, bukan diambil dari mesin.
+   ===================================================================== */
+function bulanSintetis(o){
+  // bulan buatan untuk kasus tepi: semua indikator hijau, lalu ditimpa sesuai kebutuhan
+  return Object.assign({ total_pencairan:1000, pencairan_terafiliasi:50, saldo_laporan:1000, saldo_rekening:1000,
+    pendanaan_total:1000, pendanaan_5_terbesar:100, outstanding:1000, outstanding_macet_90:20 }, o || {});
+}
+const SEMUA_YA = { izin:"ya", auditor:"ya", audit:"ya", escrow:"ya", afiliasi:"ya" };
+const dekat = (a, b) => a != null && b != null && Math.abs(a - b) < 1e-9;
+function daftarUji(){
+  const C12 = DATA.C.bulan[11], hC = hitungSkor(C12, LEGAL_CONTOH.C);
+  const U = [];
+  const tambah = (nama, harap, fn) => U.push({ nama, harap, fn });
+  // C12: 26.800 / 40.000 = 0,67 -> 67%
+  tambah("C bulan 12, I1 = 26.800 / 40.000 x 100", "67", () => { const v = hC.ind.I1.nilai; return { lulus:dekat(v, 67), hasil:angka(v, 4) }; });
+  // |12.450 - 10.000| / 10.000 = 0,245 -> 24,5%
+  tambah("C bulan 12, I2 = |12.450 - 10.000| / 10.000 x 100", "24,5", () => { const v = hC.ind.I2.nilai; return { lulus:dekat(v, 24.5), hasil:angka(v, 4) }; });
+  // 20.800 / 40.000 = 0,52 -> 52%
+  tambah("C bulan 12, I3 = 20.800 / 40.000 x 100", "52", () => { const v = hC.ind.I3.nilai; return { lulus:dekat(v, 52), hasil:angka(v, 4) }; });
+  // 31.600 / 200.000 = 0,158 -> 15,8%
+  tambah("C bulan 12, I4 = 31.600 / 200.000 x 100", "15,8", () => { const v = hC.ind.I4.nilai; return { lulus:dekat(v, 15.8), hasil:angka(v, 4) }; });
+  // jawaban contoh C: izin dan escrow "ya" -> 2 / 5 = 40%
+  tambah("C bulan 12, I5 = 2 / 5 x 100", "40", () => { const v = hC.ind.I5.nilai; return { lulus:dekat(v, 40), hasil:angka(v, 4) }; });
+  tambah("C bulan 12, status kelima indikator", "merah x5", () => { const s = ID_IND.map((id) => LAMP[hC.ind[id].lv].w.toLowerCase()); return { lulus:s.every((x) => x === "merah"), hasil:s.join(", ") }; });
+  tambah("C bulan 12, skor total, status, aturan penahan", "0; merah; I1 dan I2 merah", () => ({ lulus:dekat(hC.total, 0) && hC.status === 2 && hC.penahan && hC.penahan.aturan === "dua", hasil:angka(hC.total, 2) + "; " + LAMP[hC.status].w.toLowerCase() + "; " + (hC.penahan ? hC.penahan.aturan : "tidak aktif") }));
+  // B12: I1 6,60 hijau, I2 1,74 kuning, I3 34,2 kuning, I4 6,10 kuning, I5 60 kuning -> 0,2 x (100+50+50+50+50) = 60
+  tambah("B bulan 12, skor dan status", "60; kuning", () => { const h = hitungSkor(DATA.B.bulan[11], LEGAL_CONTOH.B); return { lulus:dekat(h.total, 60) && h.status === 1, hasil:angka(h.total, 2) + "; " + LAMP[h.status].w.toLowerCase() }; });
+  tambah("A bulan 12, skor dan status", "100; hijau", () => { const h = hitungSkor(DATA.A.bulan[11], LEGAL_CONTOH.A); return { lulus:dekat(h.total, 100) && h.status === 0, hasil:angka(h.total, 2) + "; " + LAMP[h.status].w.toLowerCase() }; });
+  // skenario v1.1 dan v1.2: C kuning pertama bulan 1 (penahan: legalitas 40% merah), merah pertama bulan 8; B kuning pertama bulan 8; A tidak pernah non-hijau
+  tambah("Skenario bulan pertama (C kuning, C merah, B kuning, A)", "1, 8, 8, tidak ada", () => {
+    const r = [bulanPertama("C", 1, LEGAL_CONTOH.C), bulanPertama("C", 2, LEGAL_CONTOH.C), bulanPertama("B", 1, LEGAL_CONTOH.B), bulanPertama("A", 1, LEGAL_CONTOH.A)];
+    return { lulus:r[0] === 1 && r[1] === 8 && r[2] === 8 && r[3] === null, hasil:r.map((x) => (x == null ? "tidak ada" : x)).join(", ") };
+  });
+  tambah("Bobot bawaan berjumlah 100", "100", () => { const s = ID_IND.reduce((a, id) => a + CFG_DEFAULT.bobot[id], 0); return { lulus:s === 100, hasil:String(s) }; });
+  // I1 merah sendiri: skor 0,2 x (0+100+100+100+100) = 80 -> menurut skor hijau, ditahan menjadi kuning
+  tambah("Aturan penahan, I1 merah sendiri", "skor 80; status kuning", () => { const h = hitungSkor(bulanSintetis({ pencairan_terafiliasi:400 }), SEMUA_YA); return { lulus:dekat(h.total, 80) && h.statusSkor === 0 && h.status === 1, hasil:"skor " + angka(h.total) + "; status " + LAMP[h.status].w.toLowerCase() }; });
+  // I1 dan I2 merah: skor 60 (kuning menurut skor), status akhir merah
+  tambah("Aturan penahan, I1 dan I2 merah", "skor 60; status merah", () => { const h = hitungSkor(bulanSintetis({ pencairan_terafiliasi:400, saldo_laporan:1100 }), SEMUA_YA); return { lulus:dekat(h.total, 60) && h.statusSkor === 1 && h.status === 2, hasil:"skor " + angka(h.total) + "; status " + LAMP[h.status].w.toLowerCase() }; });
+  // I2 merah sendiri harus ikut ditahan
+  tambah("Aturan penahan, I2 merah sendiri", "status kuning", () => { const h = hitungSkor(bulanSintetis({ saldo_laporan:1030 }), SEMUA_YA); return { lulus:h.status === 1 && h.penahan && h.penahan.id === "I2", hasil:"status " + LAMP[h.status].w.toLowerCase() }; });
+  // I5 merah sendiri (1 / 5 = 20%): skor 0,2 x (100+100+100+100+0) = 80 -> menurut skor hijau, ditahan menjadi kuning
+  tambah("Aturan penahan, I5 merah sendiri", "skor 80; status kuning", () => { const h = hitungSkor(bulanSintetis(), { izin:"ya", auditor:"tidak", audit:"tidak", escrow:"tidak", afiliasi:"tidak" }); return { lulus:dekat(h.total, 80) && h.statusSkor === 0 && h.status === 1 && h.penahan && h.penahan.id === "I5", hasil:"skor " + angka(h.total) + "; status " + LAMP[h.status].w.toLowerCase() }; });
+  // v1.2: I4 merah sendiri (150 / 1000 = 15%): skor 0,2 x (100+100+100+0+100) = 80 -> ditahan menjadi kuning
+  tambah("Aturan penahan, I4 merah sendiri", "skor 80; status kuning", () => { const h = hitungSkor(bulanSintetis({ outstanding_macet_90:150 }), SEMUA_YA); return { lulus:dekat(h.total, 80) && h.statusSkor === 0 && h.status === 1 && h.penahan && h.penahan.id === "I4", hasil:"skor " + angka(h.total) + "; status " + LAMP[h.status].w.toLowerCase() }; });
+  // bobot I5 nol: C bulan 1 hanya I5 merah, empat indikator lain hijau -> skor 100, penahan I5 diabaikan -> hijau
+  tambah("Penahan I5 diabaikan bila bobot I5 nol (C bulan 1)", "skor 100; status hijau", () => { const h = hitungSkor(DATA.C.bulan[0], LEGAL_CONTOH.C, Object.assign(salin(CFG_DEFAULT), { bobot:{ I1:20, I2:20, I3:20, I4:20, I5:0 } })); return { lulus:dekat(h.total, 100) && h.status === 0 && !h.penahan, hasil:"skor " + angka(h.total) + "; status " + LAMP[h.status].w.toLowerCase() }; });
+  // bobot 30 x 5 = 150 -> tiap bobot menjadi 30 / 150 x 100 = 20; skor B12 tetap 60
+  tambah("Bobot tidak 100 (30 x 5) dinormalkan", "tiap bobot 20; ada pesan", () => {
+    const n = normalisasiBobot({ I1:30, I2:30, I3:30, I4:30, I5:30 }), h = hitungSkor(DATA.B.bulan[11], LEGAL_CONTOH.B, Object.assign(salin(CFG_DEFAULT), { bobot:{ I1:30, I2:30, I3:30, I4:30, I5:30 } }));
+    return { lulus:n.dinormalkan && ID_IND.every((id) => dekat(n.bobot[id], 20)) && n.pesan.length > 0 && dekat(h.total, 60), hasil:ID_IND.map((id) => angka(n.bobot[id])).join("/") + "; skor B12 " + angka(h.total) };
+  });
+  tambah("Semua bobot nol", "bobot bawaan dipakai", () => { const n = normalisasiBobot({ I1:0, I2:0, I3:0, I4:0, I5:0 }); return { lulus:n.dinormalkan && ID_IND.every((id) => n.bobot[id] === 20), hasil:ID_IND.map((id) => n.bobot[id]).join("/") }; });
+  tambah("Bobot negatif dan bukan angka dianggap nol", "I1 50, I2 50, lain 0", () => { const n = normalisasiBobot({ I1:50, I2:50, I3:-20, I4:"abc", I5:null }); return { lulus:dekat(n.bobot.I1, 50) && dekat(n.bobot.I2, 50) && n.bobot.I3 === 0 && n.bobot.I4 === 0 && n.bobot.I5 === 0, hasil:ID_IND.map((id) => angka(n.bobot[id])).join("/") }; });
+  // B12 bobot 40/10/20/20/10: 0,4x100 + 0,1x50 + 0,2x50 + 0,2x50 + 0,1x50 = 70
+  tambah("Bobot berbeda (40/10/20/20/10) pada B bulan 12", "70", () => { const h = hitungSkor(DATA.B.bulan[11], LEGAL_CONTOH.B, Object.assign(salin(CFG_DEFAULT), { bobot:{ I1:40, I2:10, I3:20, I4:20, I5:10 } })); return { lulus:dekat(h.total, 70), hasil:angka(h.total) }; });
+  tambah("Pembagian nol: total pencairan 0", "I1 tidak dapat dihitung, kuning; skor tetap angka", () => { const h = hitungSkor(bulanSintetis({ total_pencairan:0, pencairan_terafiliasi:0 }), SEMUA_YA); return { lulus:h.ind.I1.nilai === null && h.ind.I1.kosong && h.ind.I1.lv === 1 && isFinite(h.total) && dekat(h.total, 90), hasil:"I1 " + nilaiTeks("I1", h.ind.I1.nilai) + "; skor " + angka(h.total) }; });
+  tambah("Bulan tanpa transaksi (semua nol)", "I1 sampai I4 kosong; skor 60; kuning", () => {
+    const nol = bulanSintetis({ total_pencairan:0, pencairan_terafiliasi:0, saldo_laporan:0, saldo_rekening:0, pendanaan_total:0, pendanaan_5_terbesar:0, outstanding:0, outstanding_macet_90:0 });
+    const h = hitungSkor(nol, SEMUA_YA);
+    return { lulus:["I1", "I2", "I3", "I4"].every((id) => h.ind[id].kosong) && dekat(h.total, 60) && h.status === 1, hasil:"skor " + angka(h.total) + "; " + LAMP[h.status].w.toLowerCase() };
+  });
+  tambah("Tepat di ambang (I1 10% dan 30%, I1 30,1%, I2 0,5%, I5 80/50/40)", "kuning, kuning, merah, kuning, hijau, kuning, merah", () => {
+    const L = (id, v) => LAMP[levelOf(id, v, CFG_DEFAULT).lv].w.toLowerCase();
+    const r = [L("I1", 10), L("I1", 30), L("I1", 30.1), L("I2", 0.5), L("I5", 80), L("I5", 50), L("I5", 40)];
+    return { lulus:r.join(", ") === "kuning, kuning, merah, kuning, hijau, kuning, merah", hasil:r.join(", ") };
+  });
+  tambah("CSV kosong", "pesan galat ramah", () => { const a = bacaCSV("   ", "laporan penyelenggara"); return { lulus:a.galat.length === 1 && /kosong/.test(a.galat[0]) && !a.baris.length, hasil:a.galat[0] || "-" }; });
+  tambah("CSV hanya judul kolom", "pesan galat", () => { const a = bacaCSV("tanggal,referensi,jumlah", "uji"); return { lulus:a.galat.length === 1 && /judul/.test(a.galat[0]), hasil:a.galat[0] || "-" }; });
+  tambah("CSV salah format (2 kolom, tanggal dan jumlah salah)", "3 galat dengan nomor baris", () => { const a = bacaCSV("tanggal,referensi,jumlah\n2026-09-01,PCR-1\n2026-02-30,PCR-2,100\n2026-09-03,PCR-3,seratus", "uji"); return { lulus:a.galat.length === 3 && /Baris 2/.test(a.galat[0]) && /Baris 3/.test(a.galat[1]) && /Baris 4/.test(a.galat[2]), hasil:a.galat.length + " galat" }; });
+  tambah("CSV format rupiah Indonesia", "125.000.000 dan Rp1.500,50 terbaca", () => { const a = bacaCSV("01/09/2026;X-1;125.000.000\n02/09/2026;X-2;Rp1.500,50", "uji"); return { lulus:!a.galat.length && a.baris[0].jumlah === 125000000 && dekat(a.baris[1].jumlah, 1500.5), hasil:a.baris.map((b) => b.jumlah).join(" dan ") }; });
+  // contoh: cocok 0901, 0902, 0904, 0905; beda 0903; hanya laporan 0906, 0907; hanya bank TRF-0911
+  tambah("CSV contoh dicocokkan", "cocok 4, beda 1, laporan 2, rekening 1", () => { const h = cocokkanTransaksi(bacaCSV(CONTOH_CSV_LAPORAN, "a").baris, bacaCSV(CONTOH_CSV_BANK, "b").baris); return { lulus:h.cocok.length === 4 && h.beda.length === 1 && h.hanyaLaporan.length === 2 && h.hanyaBank.length === 1, hasil:[h.cocok.length, h.beda.length, h.hanyaLaporan.length, h.hanyaBank.length].join(", ") }; });
+  tambah("Teks berbahaya di CSV ditampilkan sebagai teks", "tidak ada elemen img", () => {
+    const wadah = document.createElement("div"), jahat = '<img src=x onerror="window.__xss=1">';
+    rek.tampilCocok(wadah, { cocok:[], beda:[], hanyaLaporan:[{ tanggal:"2026-09-01", ref:jahat, jumlah:1 }], hanyaBank:[] });
+    return { lulus:!wadah.querySelector("img") && wadah.textContent.includes("<img") && !window.__xss, hasil:wadah.querySelector("img") ? "ada img" : "aman" };
+  });
+  tambah("Format angka id-ID", "1.234.567,89; -0,5; Rp125.000", () => { const r = [fmt(1234567.891, 2), fmt(-0.5, 1), rupiah(125000)]; return { lulus:r.join("; ") === "1.234.567,89; -0,5; Rp125.000", hasil:r.join("; ") }; });
+  tambah("Tabel Tanda Bahaya sama dengan rumus (C bulan 12)", "nilai dan skor sama", () => {
+    const awal = tb.get(); tb.set("C", 12);
+    const sel = ID_IND.map((id) => $('#tbTable tr[data-ind="' + id + '"] [data-k="nilai"]').textContent);
+    const harap = ID_IND.map((id) => nilaiTeks(id, hC.ind[id].nilai));
+    const tot = $('#tbTable [data-k="total"]').textContent;
+    tb.set(awal.plat, awal.bulan);
+    return { lulus:sel.join("|") === harap.join("|") && tot === fmt(hC.total, 1), hasil:sel.join(" ") + "; total " + tot };
+  });
+  tambah("Tabel Rekonsiliasi sama dengan rumus (C bulan 12)", "24,50%", () => {
+    const awal = rek.get(); rek.set("C");
+    const r = $$("#rekTable tbody tr"), v = r.length ? r[11].children[4].textContent : "-";
+    rek.set(awal);
+    return { lulus:r.length === 12 && v === "24,50%", hasil:r.length + " baris; B12 " + v };
+  });
+  tambah("Ekspor CSV regulator", "36 baris data + judul", () => { const t = reg.buatCSV().trim().split("\r\n"); return { lulus:t.length === 38 && t[1].startsWith("Platform;Bulan"), hasil:(t.length - 2) + " baris data" }; });
+  return U;
+}
+function jalankanUji(){
+  const U = daftarUji(), hasil = U.map((u) => { try { return Object.assign({ nama:u.nama, harap:u.harap }, u.fn()); } catch (e){ return { nama:u.nama, harap:u.harap, lulus:false, hasil:"galat: " + e.message }; } });
+  const lulus = hasil.filter((r) => r.lulus).length;
+  $("#ujiRingkas").innerHTML = '<span class="angka">' + lulus + " / " + hasil.length + "</span>" + (lulus === hasil.length ? '<span class="chip s0">' + ikon(0) + "Semua lulus</span>" : '<span class="chip s2">' + ikon(2) + (hasil.length - lulus) + " gagal</span>") + '<span class="note">Dijalankan ' + new Date().toLocaleTimeString("id-ID") + ".</span>";
+  const tbody = $("#ujiTable tbody"); tbody.textContent = "";
+  hasil.forEach((r, i) => {
+    tbody.appendChild(el("tr", { class: r.lulus ? "" : "lv2" }, [el("td", { class:"num" }, [String(i + 1)]), el("th", { scope:"row", style:"white-space:normal" }, [r.nama]), el("td", { class:"harap" }, [r.harap]), el("td", { class:"harap" }, [String(r.hasil)]), el("td", null, [chipEl(r.lulus ? 0 : 2, r.lulus ? "Lulus" : "Gagal")])]));
+  });
+  window.TelusurDana.hasilUji = { lulus, total:hasil.length, rincian:hasil };
+  return { lulus, total:hasil.length };
+}
+$("#ujiUlang").addEventListener("click", () => { jalankanUji(); toast("Uji Hitung dijalankan ulang."); });
+RENDER["uji-hitung"] = jalankanUji;
+
+// akses dari konsol browser (F12), misalnya: TelusurDana.hitungSkor(TelusurDana.DATA.C.bulan[11], TelusurDana.LEGAL_CONTOH.C)
+window.TelusurDana = { DATA, LEGAL_CONTOH, CFG_DEFAULT, hitungSkor, normalisasiBobot, bacaCSV, cocokkanTransaksi, jalankanUji, versi:VERSI };
+
+show((location.hash || "#beranda").slice(1), false);
+})();
+</script>
+</body>
+</html>
