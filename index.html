@@ -748,7 +748,7 @@ pre.salin{margin:0;font-family:var(--f-mono);font-size:12.5px;line-height:1.5;ba
           <li>Ubah status menjadi skor indikator: hijau 100, kuning 50, merah 0.</li>
           <li>Skor total = jumlah (bobot x skor indikator) / 100. Bobot bawaan 20% masing-masing.</li>
           <li>Status total: hijau 75 ke atas, kuning 45 sampai 74, merah di bawah 45.</li>
-          <li>Aturan penahan: bila I1 atau I2 merah, status total paling baik kuning. Bila keduanya merah, status total merah.</li>
+          <li>Aturan penahan: bila satu indikator saja merah, status total paling baik kuning. Bila I1 dan I2 sama-sama merah, status total merah. Penahan hanya berlaku untuk indikator yang bobotnya lebih dari nol.</li>
         </ol>
       </div>
       <div class="card box" id="tenContoh"></div>
@@ -850,8 +850,8 @@ document.documentElement.lang = "id";
    (selisih saldo dan konsentrasi naik); C memburuk mulai bulan 6, rasio
    terafiliasi 67% di bulan 12 adalah ILUSTRASI.
    ===================================================================== */
-const VERSI = "1.0";
-const TANGGAL = "22 Oktober 2026";
+const VERSI = "1.2";
+const TANGGAL = "24 Oktober 2026";
 const MODE = /*MODE*/"mandiri";   // "mandiri" = berkas index.html dibuka di browser; "artifact" = halaman terbit di claude.ai
 const DATA = {
   A: { nama:"Platform Contoh A", bulan:[
@@ -963,7 +963,7 @@ const IND = {
   I2:{ nama:"Selisih rekonsiliasi saldo", pendek:"Selisih saldo", arah:"turun", desimal:2,
        rumus:"|saldo laporan - saldo rekening| / saldo rekening x 100", penyebut:"saldo rekening",
        tanya:"Mengapa saldo yang dilaporkan berbeda dengan saldo rekening penampung, dan kapan selisih itu diselesaikan?" },
-  I3:{ nama:"Konsentrasi peminjam", pendek:"Konsentrasi peminjam", arah:"turun", desimal:1,
+  I3:{ nama:"Konsentrasi penerima dana", pendek:"Konsentrasi penerima dana", arah:"turun", desimal:1,
        rumus:"pendanaan 5 penerima terbesar / pendanaan total x 100", penyebut:"pendanaan total",
        tanya:"Siapa lima penerima dana terbesar, dan bagaimana penyelenggara membatasi konsentrasi pendanaan?" },
   I4:{ nama:"Wanprestasi di atas 90 hari", pendek:"Wanprestasi 90 hari", arah:"turun", desimal:1,
@@ -1041,9 +1041,11 @@ function hitungSkor(m, jawabLegal, cfg){
   total = bulat9(total);
   const statusSkor = total >= cfg.lampu.g ? 0 : (total >= cfg.lampu.r ? 1 : 2);
   let status = statusSkor, penahan = null;
-  const m1 = ind.I1.lv === 2, m2 = ind.I2.lv === 2;
-  if (m1 && m2){ penahan = { aturan:"dua", mengubah: statusSkor !== 2 }; status = 2; }
-  else if (m1 || m2){ penahan = { aturan:"satu", id: m1 ? "I1" : "I2", mengubah: statusSkor === 0 }; status = Math.max(statusSkor, 1); }
+  // v1.2: penahan berlaku untuk kelima indikator. Penahan hanya berlaku untuk indikator yang bobotnya lebih dari nol.
+  const merahAktif = (id) => nb.bobot[id] > 0 && ind[id].lv === 2;
+  const m1 = merahAktif("I1"), m2 = merahAktif("I2"), ids = ID_IND.filter(merahAktif);
+  if (m1 && m2){ penahan = { aturan:"dua", ids, mengubah: statusSkor !== 2 }; status = 2; }
+  else if (ids.length){ penahan = { aturan:"satu", ids, id: daftarKata(ids), mengubah: statusSkor === 0 }; status = Math.max(statusSkor, 1); }
   return { ind, total, statusSkor, status, penahan, bobotInfo:nb, cfg };
 }
 // kalimat penjelasan untuk satu indikator yang tidak hijau
@@ -1061,6 +1063,7 @@ function kalimatIndikator(id, d, cfg){
 function penjelasan(h){
   return ID_IND.filter((id) => h.ind[id].lv > 0).map((id) => kalimatIndikator(id, h.ind[id], h.cfg));
 }
+function daftarKata(a){ return a.length <= 2 ? a.join(" dan ") : a.slice(0, -1).join(", ") + ", dan " + a[a.length - 1]; }
 function kalimatPenahan(h){
   if (!h.penahan) return "";
   if (h.penahan.aturan === "dua") return "Aturan penahan aktif: I1 dan I2 sama-sama merah, sehingga status total merah" + (h.penahan.mengubah ? " walaupun skornya " + angka(h.total, 1) + "." : ".");
@@ -1600,7 +1603,7 @@ const tb = (function(){
     $("#tbHero").innerHTML =
       '<p class="eyebrow">' + p.nama + ", bulan " + bulan + "</p>" +
       '<div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap"><span class="angka" id="tbAngka">' + angka(h.total, 1) + "<small>/100</small></span>" + chip(h.status) + "</div>" + sk +
-      '<p class="penahan">' + (h.penahan ? "<b>" + esc(kalimatPenahan(h)) + "</b>" : "Aturan penahan tidak aktif: I1 dan I2 tidak berstatus merah.") + "</p>" +
+      '<p class="penahan">' + (h.penahan ? "<b>" + esc(kalimatPenahan(h)) + "</b>" : "Aturan penahan tidak aktif: tidak ada indikator yang berstatus merah.") + "</p>" +
       '<p class="note">Skor total = jumlah (bobot x skor indikator) / 100. Hijau 75 ke atas, kuning 45 sampai 74, merah di bawah 45.</p>';
     const pj = penjelasan(h), pt = pertanyaanUntuk(h, STATE.legal[plat]);
     $("#tbAlasan").innerHTML = "<h3>Penjelasan otomatis</h3>" +
@@ -1852,7 +1855,7 @@ const reg = (function(){
     "I4 = " + fmt(m.outstanding_macet_90) + " / " + fmt(m.outstanding) + " x 100 = " + fmt(h.ind.I4.nilai, 2) + "% (" + st("I4") + ")",
     "I5 = " + kl.ya + " / " + kl.total + " x 100 = " + fmt(h.ind.I5.nilai, 0) + "% (" + st("I5") + ")",
     "Skor total = " + ID_IND.map((id) => "0,2 x " + h.ind[id].skor).join(" + ") + " = " + angka(h.total, 1),
-    "Status: " + angka(h.total, 1) + " berada di rentang " + (h.statusSkor === 0 ? "hijau (75 ke atas)" : h.statusSkor === 1 ? "kuning (45 sampai 74)" : "merah (di bawah 45)") + ". " + (h.penahan ? kalimatPenahan(h) : "I1 dan I2 tidak merah, jadi aturan penahan tidak berlaku.") + " Hasil akhir: " + statusText(h.status) + "."
+    "Status: " + angka(h.total, 1) + " berada di rentang " + (h.statusSkor === 0 ? "hijau (75 ke atas)" : h.statusSkor === 1 ? "kuning (45 sampai 74)" : "merah (di bawah 45)") + ". " + (h.penahan ? kalimatPenahan(h) : "Tidak ada indikator merah, jadi aturan penahan tidak berlaku.") + " Hasil akhir: " + statusText(h.status) + "."
   ];
   $("#tenContoh").innerHTML = "<h3>Contoh hitung: " + DATA[k].nama + ", bulan " + b + " (Rp juta)</h3><ol class=\"plain\">" + langkah.map((x) => '<li class="mono" style="font-size:13px">' + esc(x) + "</li>").join("") + "</ol>";
   const asumsi = [
@@ -1872,7 +1875,7 @@ const reg = (function(){
     baris.push("Ringkasan indikator TelusurDana (asumsi rancangan, belum divalidasi)");
     baris.push(["Indikator", "Rumus", "Hijau", "Kuning", "Merah", "Bobot", "Status asumsi"].join(T));
     ID_IND.forEach((id) => { const z = kel(id).map((s) => s.replace("&ge;", ">=").replace("&lt;", "<").replace("&gt;", ">")); baris.push([id + " " + IND[id].nama, IND[id].rumus, z[0], z[1], z[2], CFG_DEFAULT.bobot[id] + "%", "Asumsi rancangan, belum divalidasi"].join(T)); });
-    baris.push("Skor indikator: hijau 100, kuning 50, merah 0. Skor total = jumlah (bobot x skor indikator) / 100. Status total: hijau >= 75, kuning 45 sampai 74, merah < 45. Aturan penahan: bila I1 atau I2 merah, status total paling baik kuning; bila keduanya merah, status total merah.");
+    baris.push("Skor indikator: hijau 100, kuning 50, merah 0. Skor total = jumlah (bobot x skor indikator) / 100. Status total: hijau >= 75, kuning 45 sampai 74, merah < 45. Aturan penahan: bila satu indikator saja merah, status total paling baik kuning; bila I1 dan I2 sama-sama merah, status total merah; penahan hanya berlaku untuk indikator berbobot lebih dari nol.");
     baris.push("");
     baris.push("Nilai indikator tiga platform fiktif, bulan 12 (data simulasi)");
     baris.push(["Platform"].concat(ID_IND.map((id) => id + " " + IND[id].pendek)).concat(["Skor akhir", "Status akhir"]).join(T));
@@ -1909,13 +1912,13 @@ const LANGKAH = [
   { view:"beranda", sel:".hero", dtk:20, judul:"Masalahnya: audit tahunan datang terlambat",
     teks:"Audit tahunan memeriksa periode yang sudah lewat. TelusurDana mencocokkan data secara berkelanjutan dan memberi lampu beserta alasannya." },
   { view:"beranda", sel:"#petaKartu", dtk:20, judul:"Satu tahun dalam satu peta",
-    teks:"Tiga platform fiktif. Contoh C mulai kuning di bulan 6 dan merah di bulan 8, jauh sebelum opini audit terbit setelah tutup buku." },
+    teks:"Tiga platform fiktif. Contoh C sudah kuning sejak bulan 1 karena legalitasnya tidak lengkap, lalu merah di bulan 8, jauh sebelum opini audit terbit setelah tutup buku." },
   { view:"rekonsiliasi", sel:"#rekChart", dtk:25, aksi:() => rek.set("C"), judul:"Rekonsiliasi: laporan vs rekening",
     teks:"Saldo laporan Contoh C hampir tetap, sedangkan saldo rekening penampung terus turun. Selisihnya melebar sampai 24,5% di bulan 12." },
   { view:"rekonsiliasi", sel:"#rekTabelKartu", dtk:15, judul:"Baris yang tidak cocok ditandai",
     teks:"Setiap bulan diberi status dengan ikon dan teks, bukan warna saja. Angka mentahnya bisa diperiksa ulang dengan kalkulator." },
-  { view:"tanda-bahaya", sel:"#tbHero", dtk:20, aksi:() => tb.set("C", 6), judul:"Bulan 6: kuning pertama",
-    teks:"Dana ke pihak terafiliasi naik ke 14% dan selisih saldo 0,92%. Skor turun ke 60, jadi lampu kuning dan pertanyaan mulai diajukan." },
+  { view:"tanda-bahaya", sel:"#tbHero", dtk:20, aksi:() => tb.set("C", 6), judul:"Bulan 6: skor mulai turun",
+    teks:"Dana ke pihak terafiliasi naik ke 14% dan selisih saldo 0,92%. Skor turun dari 80 ke 60, dan pertanyaan untuk penyelenggara bertambah." },
   { view:"tanda-bahaya", sel:"#tbAlasan", dtk:25, aksi:() => tb.set("C", 8), judul:"Bulan 8: merah, lengkap dengan alasannya",
     teks:"I1 dan I2 sama-sama merah, jadi aturan penahan membuat status merah. Mesin menulis alasan dan pertanyaan untuk penyelenggara secara otomatis." },
   { view:"tanda-bahaya", sel:"#tbChart", dtk:15, judul:"Tren skor",
@@ -2004,10 +2007,10 @@ function daftarUji(){
   // B12: I1 6,60 hijau, I2 1,74 kuning, I3 34,2 kuning, I4 6,10 kuning, I5 60 kuning -> 0,2 x (100+50+50+50+50) = 60
   tambah("B bulan 12, skor dan status", "60; kuning", () => { const h = hitungSkor(DATA.B.bulan[11], LEGAL_CONTOH.B); return { lulus:dekat(h.total, 60) && h.status === 1, hasil:angka(h.total, 2) + "; " + LAMP[h.status].w.toLowerCase() }; });
   tambah("A bulan 12, skor dan status", "100; hijau", () => { const h = hitungSkor(DATA.A.bulan[11], LEGAL_CONTOH.A); return { lulus:dekat(h.total, 100) && h.status === 0, hasil:angka(h.total, 2) + "; " + LAMP[h.status].w.toLowerCase() }; });
-  // skenario: C kuning pertama bulan 6, merah pertama bulan 8; B kuning pertama bulan 8; A tidak pernah non-hijau
-  tambah("Skenario bulan pertama (C kuning, C merah, B kuning, A)", "6, 8, 8, tidak ada", () => {
+  // skenario v1.1 dan v1.2: C kuning pertama bulan 1 (penahan: legalitas 40% merah), merah pertama bulan 8; B kuning pertama bulan 8; A tidak pernah non-hijau
+  tambah("Skenario bulan pertama (C kuning, C merah, B kuning, A)", "1, 8, 8, tidak ada", () => {
     const r = [bulanPertama("C", 1, LEGAL_CONTOH.C), bulanPertama("C", 2, LEGAL_CONTOH.C), bulanPertama("B", 1, LEGAL_CONTOH.B), bulanPertama("A", 1, LEGAL_CONTOH.A)];
-    return { lulus:r[0] === 6 && r[1] === 8 && r[2] === 8 && r[3] === null, hasil:r.map((x) => (x == null ? "tidak ada" : x)).join(", ") };
+    return { lulus:r[0] === 1 && r[1] === 8 && r[2] === 8 && r[3] === null, hasil:r.map((x) => (x == null ? "tidak ada" : x)).join(", ") };
   });
   tambah("Bobot bawaan berjumlah 100", "100", () => { const s = ID_IND.reduce((a, id) => a + CFG_DEFAULT.bobot[id], 0); return { lulus:s === 100, hasil:String(s) }; });
   // I1 merah sendiri: skor 0,2 x (0+100+100+100+100) = 80 -> menurut skor hijau, ditahan menjadi kuning
@@ -2016,6 +2019,12 @@ function daftarUji(){
   tambah("Aturan penahan, I1 dan I2 merah", "skor 60; status merah", () => { const h = hitungSkor(bulanSintetis({ pencairan_terafiliasi:400, saldo_laporan:1100 }), SEMUA_YA); return { lulus:dekat(h.total, 60) && h.statusSkor === 1 && h.status === 2, hasil:"skor " + angka(h.total) + "; status " + LAMP[h.status].w.toLowerCase() }; });
   // I2 merah sendiri harus ikut ditahan
   tambah("Aturan penahan, I2 merah sendiri", "status kuning", () => { const h = hitungSkor(bulanSintetis({ saldo_laporan:1030 }), SEMUA_YA); return { lulus:h.status === 1 && h.penahan && h.penahan.id === "I2", hasil:"status " + LAMP[h.status].w.toLowerCase() }; });
+  // I5 merah sendiri (1 / 5 = 20%): skor 0,2 x (100+100+100+100+0) = 80 -> menurut skor hijau, ditahan menjadi kuning
+  tambah("Aturan penahan, I5 merah sendiri", "skor 80; status kuning", () => { const h = hitungSkor(bulanSintetis(), { izin:"ya", auditor:"tidak", audit:"tidak", escrow:"tidak", afiliasi:"tidak" }); return { lulus:dekat(h.total, 80) && h.statusSkor === 0 && h.status === 1 && h.penahan && h.penahan.id === "I5", hasil:"skor " + angka(h.total) + "; status " + LAMP[h.status].w.toLowerCase() }; });
+  // v1.2: I4 merah sendiri (150 / 1000 = 15%): skor 0,2 x (100+100+100+0+100) = 80 -> ditahan menjadi kuning
+  tambah("Aturan penahan, I4 merah sendiri", "skor 80; status kuning", () => { const h = hitungSkor(bulanSintetis({ outstanding_macet_90:150 }), SEMUA_YA); return { lulus:dekat(h.total, 80) && h.statusSkor === 0 && h.status === 1 && h.penahan && h.penahan.id === "I4", hasil:"skor " + angka(h.total) + "; status " + LAMP[h.status].w.toLowerCase() }; });
+  // bobot I5 nol: C bulan 1 hanya I5 merah, empat indikator lain hijau -> skor 100, penahan I5 diabaikan -> hijau
+  tambah("Penahan I5 diabaikan bila bobot I5 nol (C bulan 1)", "skor 100; status hijau", () => { const h = hitungSkor(DATA.C.bulan[0], LEGAL_CONTOH.C, Object.assign(salin(CFG_DEFAULT), { bobot:{ I1:20, I2:20, I3:20, I4:20, I5:0 } })); return { lulus:dekat(h.total, 100) && h.status === 0 && !h.penahan, hasil:"skor " + angka(h.total) + "; status " + LAMP[h.status].w.toLowerCase() }; });
   // bobot 30 x 5 = 150 -> tiap bobot menjadi 30 / 150 x 100 = 20; skor B12 tetap 60
   tambah("Bobot tidak 100 (30 x 5) dinormalkan", "tiap bobot 20; ada pesan", () => {
     const n = normalisasiBobot({ I1:30, I2:30, I3:30, I4:30, I5:30 }), h = hitungSkor(DATA.B.bulan[11], LEGAL_CONTOH.B, Object.assign(salin(CFG_DEFAULT), { bobot:{ I1:30, I2:30, I3:30, I4:30, I5:30 } }));
